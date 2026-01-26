@@ -1,0 +1,50 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code settings
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+
+# Data and uploads
+data/raw_docs
+data/
+data/*
+data/**/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.*
+
+# Test and coverage outputs
+.coverage
+htmlcov/
+.tox/
+
+# Misc
+*.swp
+*.bak
+*.tmp
+
+# Ignore uploads and user files
+uploads/
