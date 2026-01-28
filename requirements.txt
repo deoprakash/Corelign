@@ -3,3 +3,6 @@ uvicorn
 python-multipart
 pydantic
 python-docx
+faiss-cpu
+chromadb
+sentence-transformers
