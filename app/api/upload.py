@@ -51,8 +51,7 @@ async def upload_document(file: UploadFile = File(...)):
 
     # ✅ Add vectors WITH chunk IDs
     faiss_index.add_vectors(
-        vectors=embeddings,
-        ids=[c["chunk_id"] for c in chunks_to_embed]
+        embeddings
     )
 
     # ✅ Store metadata + text in Chroma
