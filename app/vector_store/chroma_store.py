@@ -30,7 +30,7 @@ class ChromaStore:
                 "section_level": c["section_level"],
                 "source_file": c["source_file"]
             })
-            ids.append(f"{c['document_id']}::chunk::{c['chunk_id']}")
+            ids.append(c["chunk_id"])
 
         self.collection.add(
             documents=documents,
