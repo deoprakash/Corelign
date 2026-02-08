@@ -6,3 +6,6 @@ python-docx
 faiss-cpu
 chromadb
 sentence-transformers
+langchain
+langchain-groq
+python-dotenv

@@ -40,9 +40,11 @@ from pydantic import BaseModel
 from app.embeddings.embedder import Embedder
 from app.vector_store.index_instance import faiss_index
 from app.vector_store import chroma_store
+from app.llm.groq_llm import GroqLLM
 
 router = APIRouter()
 embedder = Embedder()
+llm = GroqLLM()
 
 
 class QueryRequest(BaseModel):
@@ -79,12 +81,27 @@ async def query_documents(request: QueryRequest):
         return {"results": [], "debug": "No chunk_ids from FAISS search"}
 
     # 3️⃣ Fetch documents from Chroma
-    results = chroma_store.collection.get(
+    chroma_results = chroma_store.collection.get(
         ids=chunk_ids
     )
-    print(f"DEBUG: Chroma returned {len(results['ids'])} results")
+
+    print(f"DEBUG: Chroma returned keys: {list(chroma_results.keys())}")
+
+    documents = chroma_results.get("documents", [])
+    # Chroma may return 'metadatas' (plural) depending on version; fallback to 'metadata' if present
+    metadatas = chroma_results.get("metadatas", chroma_results.get("metadata", []))
+
+    # Build  Context
+    context = "\n\n".join(documents)
+
+    # Ask Groq
+    answer = llm.generate_answer(
+        context=context,
+        question=query
+    )
 
     return {
         "query": query,
-        "results": results
+        "answer": answer,
+        "sources": metadatas 
     }

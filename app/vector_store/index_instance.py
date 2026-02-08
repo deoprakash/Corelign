@@ -7,3 +7,4 @@ VECTOR_DIM = 384
 VECTOR_STORE_DIR = Path("data/vector_store")
 
 faiss_index = FaissIndex(dim=VECTOR_DIM, storage_dir=VECTOR_STORE_DIR)
+# faiss_index = None
