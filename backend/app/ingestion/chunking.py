@@ -1,4 +1,16 @@
 def _split_text_with_overlap(text, chunk_size, chunk_overlap):
+    """
+    Split text into chunks of approximately chunk_size characters,
+    using word boundaries to avoid breaking words.
+    
+    Args:
+        text: Text to split
+        chunk_size: Target character count per chunk
+        chunk_overlap: Number of characters to overlap between chunks
+    
+    Returns:
+        List of text chunks split at word boundaries
+    """
     if chunk_size <= 0:
         raise ValueError("chunk_size must be > 0")
     if chunk_overlap < 0:
@@ -7,21 +19,46 @@ def _split_text_with_overlap(text, chunk_size, chunk_overlap):
     # Prevent infinite loops when overlap is too large.
     safe_overlap = min(chunk_overlap, chunk_size - 1) if chunk_size > 1 else 0
 
+    # Split text into words (preserving spaces for reconstruction)
+    words = text.split()
+    
+    if not words:
+        return []
+    
     parts = []
-    start = 0
-    text_len = len(text)
-
-    while start < text_len:
-        end = min(start + chunk_size, text_len)
-        piece = text[start:end].strip()
-        if piece:
-            parts.append(piece)
-
-        if end >= text_len:
-            break
-
-        start = end - safe_overlap
-
+    current_chunk_words = []
+    current_chunk_length = 0
+    
+    for word in words:
+        word_length = len(word) + 1  # +1 for the space
+        
+        # If adding this word exceeds chunk_size, finalize current chunk
+        if current_chunk_length + word_length > chunk_size and current_chunk_words:
+            chunk_text = " ".join(current_chunk_words)
+            parts.append(chunk_text)
+            
+            # Calculate overlap in words from the end of current chunk
+            overlap_length = 0
+            overlap_words = []
+            for w in reversed(current_chunk_words):
+                w_length = len(w) + 1
+                if overlap_length + w_length <= safe_overlap:
+                    overlap_words.insert(0, w)
+                    overlap_length += w_length
+                else:
+                    break
+            
+            current_chunk_words = overlap_words
+            current_chunk_length = overlap_length
+        
+        current_chunk_words.append(word)
+        current_chunk_length += word_length
+    
+    # Don't forget the last chunk
+    if current_chunk_words:
+        chunk_text = " ".join(current_chunk_words)
+        parts.append(chunk_text)
+    
     return parts
 
 

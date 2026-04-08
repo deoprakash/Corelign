@@ -1,4 +1,5 @@
 import re
+from typing import Dict, List, Tuple
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -23,9 +24,101 @@ def _chunk_sort_key(chunk_id: str):
     return (0, int(match.group(1)))
 
 
+def _calculate_keyword_similarity(query: str, document: str) -> float:
+    """
+    Calculate keyword-based similarity using term overlap.
+    Returns a score between 0 and 1.
+    """
+    query_terms = set(query.lower().split())
+    doc_terms = set(document.lower().split())
+    
+    if not query_terms or not doc_terms:
+        return 0.0
+    
+    # Jaccard similarity: intersection / union
+    intersection = len(query_terms & doc_terms)
+    union = len(query_terms | doc_terms)
+    
+    return intersection / union if union > 0 else 0.0
+
+
+def _hybrid_search(
+    query: str,
+    top_k: int,
+    semantic_weight: float = 0.6,
+    keyword_weight: float = 0.4
+) -> Tuple[List[str], Dict[str, float], Dict[str, Dict]]:
+    """
+    Perform hybrid search combining semantic and keyword similarity.
+    
+    Args:
+        query: Query text
+        top_k: Number of results to return
+        semantic_weight: Weight for semantic similarity (0-1)
+        keyword_weight: Weight for keyword similarity (0-1)
+    
+    Returns:
+        Tuple of (chunk_ids, hybrid_scores, chunk_details)
+    """
+    # 1️⃣ Semantic Search via FAISS
+    query_embedding = embedder.embed_texts([query])
+    semantic_chunk_ids, semantic_scores = faiss_index.search_with_scores(query_embedding, top_k * 2)
+    
+    if not semantic_chunk_ids:
+        return [], {}, {}
+    
+    # Fetch documents from Chroma for keyword search
+    chroma_results = chroma_store.collection.get(
+        ids=semantic_chunk_ids,
+        include=["documents", "metadatas"]
+    )
+    
+    semantic_scores_dict = {
+        chunk_id: score 
+        for chunk_id, score in zip(semantic_chunk_ids, semantic_scores)
+    }
+    
+    # 2️⃣ Calculate Keyword Similarity
+    chunk_details = {}
+    keyword_scores_dict = {}
+    
+    for idx, chunk_id in enumerate(chroma_results.get("ids", [])):
+        doc = chroma_results.get("documents", [])[idx] if idx < len(chroma_results.get("documents", [])) else ""
+        metadata = chroma_results.get("metadatas", [])[idx] if idx < len(chroma_results.get("metadatas", [])) else {}
+        
+        keyword_score = _calculate_keyword_similarity(query, doc)
+        keyword_scores_dict[chunk_id] = keyword_score
+        chunk_details[chunk_id] = {
+            "document": doc,
+            "metadata": metadata,
+            "semantic_score": semantic_scores_dict.get(chunk_id, 0.0),
+            "keyword_score": keyword_score
+        }
+    
+    # 3️⃣ Combine scores with hybrid weighting
+    hybrid_scores = {}
+    for chunk_id in chunk_details:
+        semantic_score = chunk_details[chunk_id]["semantic_score"]
+        keyword_score = chunk_details[chunk_id]["keyword_score"]
+        
+        # Weighted combination normalized to 0-1
+        hybrid_score = (semantic_weight * semantic_score + keyword_weight * keyword_score) / (semantic_weight + keyword_weight)
+        hybrid_scores[chunk_id] = hybrid_score
+    
+    # 4️⃣ Sort by hybrid score and return top_k
+    sorted_chunks = sorted(hybrid_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+    final_chunk_ids = [chunk_id for chunk_id, _ in sorted_chunks]
+    final_hybrid_scores = {chunk_id: score for chunk_id, score in sorted_chunks}
+    
+    return final_chunk_ids, final_hybrid_scores, chunk_details
+
+
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 7
+    use_hybrid: bool = True
+    semantic_weight: float = 0.6
+    keyword_weight: float = 0.4
 
 
 @router.post("/query")
@@ -35,6 +128,9 @@ async def query_documents(request: QueryRequest):
         return {"error": "Query text is required."}
 
     top_k = request.top_k
+    use_hybrid = request.use_hybrid
+    semantic_weight = request.semantic_weight
+    keyword_weight = request.keyword_weight
 
     if not faiss_index.has_vectors:
         faiss_index.load_from_disk()
@@ -44,18 +140,50 @@ async def query_documents(request: QueryRequest):
 
     print(f"DEBUG: FAISS index has {faiss_index.index.ntotal} vectors, {len(faiss_index.chunk_ids)} chunk_ids")
     print(f"DEBUG: Chroma has {chroma_store.collection.count()} chunks")
-    print(f"DEBUG: First 5 chunk_ids in FAISS: {faiss_index.chunk_ids[:5]}")
+    print(f"DEBUG: Search mode: {'HYBRID' if use_hybrid else 'SEMANTIC'}")
 
     # Start overall timer
     t_start = time.perf_counter()
 
-    # 1️⃣ Embed query
-    query_embedding = embedder.embed_texts([query])
-
-    # 2️⃣ FAISS similarity search (returns chunk_ids + cosine similarities)
+    # Perform search (hybrid or semantic only)
     t_retr_start = time.perf_counter()
-    chunk_ids, similarities = faiss_index.search_with_scores(query_embedding, top_k)
-    print(f"DEBUG: FAISS returned {len(chunk_ids)} chunk_ids: {chunk_ids}")
+    
+    if use_hybrid:
+        chunk_ids, hybrid_scores, chunk_details = _hybrid_search(
+            query, 
+            top_k,
+            semantic_weight,
+            keyword_weight
+        )
+        print(f"DEBUG: Hybrid search returned {len(chunk_ids)} chunk_ids")
+    else:
+        # Fallback to semantic-only search
+        query_embedding = embedder.embed_texts([query])
+        chunk_ids, similarities = faiss_index.search_with_scores(query_embedding, top_k)
+        hybrid_scores = {
+            chunk_id: score 
+            for chunk_id, score in zip(chunk_ids, similarities)
+        }
+        
+        if not chunk_ids:
+            chunk_details = {}
+        else:
+            chroma_results = chroma_store.collection.get(
+                ids=chunk_ids,
+                include=["documents", "metadatas"]
+            )
+            
+            chunk_details = {}
+            for idx, chunk_id in enumerate(chroma_results.get("ids", [])):
+                doc = chroma_results.get("documents", [])[idx] if idx < len(chroma_results.get("documents", [])) else ""
+                metadata = chroma_results.get("metadatas", [])[idx] if idx < len(chroma_results.get("metadatas", [])) else {}
+                chunk_details[chunk_id] = {
+                    "document": doc,
+                    "metadata": metadata,
+                    "semantic_score": hybrid_scores.get(chunk_id, 0.0),
+                    "keyword_score": 0.0
+                }
+        print(f"DEBUG: Semantic search returned {len(chunk_ids)} chunk_ids")
 
     if not chunk_ids:
         return {
@@ -65,37 +193,24 @@ async def query_documents(request: QueryRequest):
             "chunks": [],
             "confidence": 0.0,
             "semantic_similarity": 0.0,
+            "search_mode": "hybrid" if use_hybrid else "semantic",
         }
-
-    # 3️⃣ Fetch documents from Chroma
-    chroma_results = chroma_store.collection.get(
-        ids=chunk_ids,
-        include=["documents", "metadatas"],
-    )
 
     t_retr_end = time.perf_counter()
     retrieval_time = t_retr_end - t_retr_start
-    # retrieval_time covers FAISS search + Chroma fetch
-
-    print(f"DEBUG: Chroma returned keys: {list(chroma_results.keys())}")
-
-    ids = chroma_results.get("ids", [])
-    documents = chroma_results.get("documents", [])
-    # Chroma may return 'metadatas' (plural) depending on version; fallback to 'metadata' if present
-    metadatas = chroma_results.get("metadatas", chroma_results.get("metadata", []))
 
     # Build Context
-    # documents = [doc for doc in documents if doc and doc.strip()]
-    # context = "\n\n".join(documents)
-
     rows = []
-    for idx, doc in enumerate(documents):
+    for chunk_id in chunk_ids:
+        if chunk_id not in chunk_details:
+            continue
+        
+        doc = chunk_details[chunk_id].get("document", "")
         if not doc or not doc.strip():
             continue
-
-        row_id = ids[idx] if idx < len(ids) else ""
-        row_meta = metadatas[idx] if idx < len(metadatas) else {}
-        rows.append((row_id, doc.strip(), row_meta))
+        
+        metadata = chunk_details[chunk_id].get("metadata", {})
+        rows.append((chunk_id, doc.strip(), metadata))
 
     rows.sort(key=lambda r: _chunk_sort_key(r[0]))
 
@@ -109,25 +224,25 @@ async def query_documents(request: QueryRequest):
         return {
             "query": query,
             "answer": "I don't have enough information in the provided context to answer that.",
-            "sources": metadatas,
+            "sources": [],
             "chunks": [],
             "confidence": 0.0,
             "semantic_similarity": 0.0,
+            "search_mode": "hybrid" if use_hybrid else "semantic",
         }
 
-    # Similarity values from FAISS are cosine similarities because the index is
-    # normalized with inner product search.
+    # Calculate confidence from hybrid scores
     confidence = 0.0
     semantic_similarity = 0.0
-    if similarities:
-        avg_similarity = sum(similarities) / len(similarities)
-        top_similarity = max(similarities)
-        confidence = round(max(0.0, min(1.0, avg_similarity)), 3)
-        semantic_similarity = round(max(0.0, min(1.0, top_similarity)), 3)
+    if hybrid_scores:
+        avg_score = sum(hybrid_scores.values()) / len(hybrid_scores)
+        top_score = max(hybrid_scores.values())
+        confidence = round(max(0.0, min(1.0, avg_score)), 3)
+        semantic_similarity = round(max(0.0, min(1.0, top_score)), 3)
 
     score_by_chunk_id = {
         chunk_id: round(max(0.0, min(1.0, score)), 3)
-        for chunk_id, score in zip(chunk_ids, similarities)
+        for chunk_id, score in hybrid_scores.items()
     }
 
     # Ask Groq
@@ -153,19 +268,23 @@ async def query_documents(request: QueryRequest):
         )
     except Exception as e:
         print(f"DEBUG: Failed to write metrics: {e}")
-    # Include the retrieved chunk texts and metadata in the response so the
-    # frontend can surface the original chunks for each answer.
+
+    # Build response with detailed scoring information
     chunks = [{
         "id": row_id,
         "text": doc,
         "meta": meta,
-        "score": score_by_chunk_id.get(row_id, None),
+        "hybrid_score": score_by_chunk_id.get(row_id, None),
+        "semantic_score": round(chunk_details.get(row_id, {}).get("semantic_score", 0.0), 3),
+        "keyword_score": round(chunk_details.get(row_id, {}).get("keyword_score", 0.0), 3),
     } for (row_id, doc, meta) in rows]
 
     sources = [{
         "id": row_id,
         "metadata": meta,
-        "score": score_by_chunk_id.get(row_id, None),
+        "hybrid_score": score_by_chunk_id.get(row_id, None),
+        "semantic_score": round(chunk_details.get(row_id, {}).get("semantic_score", 0.0), 3),
+        "keyword_score": round(chunk_details.get(row_id, {}).get("keyword_score", 0.0), 3),
     } for (row_id, _, meta) in rows]
 
     return {
@@ -175,4 +294,9 @@ async def query_documents(request: QueryRequest):
         "chunks": chunks,
         "confidence": confidence,
         "semantic_similarity": semantic_similarity,
+        "search_mode": "hybrid" if use_hybrid else "semantic",
+        "weights": {
+            "semantic": semantic_weight,
+            "keyword": keyword_weight
+        } if use_hybrid else None,
     }
