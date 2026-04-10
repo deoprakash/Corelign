@@ -1,12 +1,32 @@
+import asyncio
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
+
 from app.api import upload, query
+from app.utils.storage_reset import ensure_storage_reset, storage_reset_loop
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_storage_reset()
+    reset_task = asyncio.create_task(storage_reset_loop())
+    try:
+        yield
+    finally:
+        reset_task.cancel()
+        try:
+            await reset_task
+        except asyncio.CancelledError:
+            pass
 
 app = FastAPI(
     title="RAG Document System",
     description="Document ingestion and retrieval API",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan,
 )
 
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")

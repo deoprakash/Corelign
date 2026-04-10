@@ -46,6 +46,8 @@ The backend is ready for Railway deployment using Docker.
 - `CORS_ORIGINS` (recommended): Comma-separated frontend origins.
 - `CORS_ORIGIN_REGEX` (optional): Regex for allowed origins, defaults to Vercel and localhost.
 - `DATA_DIR` (recommended): Persistent data path. Use `/data` with Railway Volume.
+- `DATA_RESET_DAYS` (optional): Reset interval in days. Default is `3`.
+- `DATA_RESET_CHECK_INTERVAL_HOURS` (optional): How often the app checks the reset timer. Default is `24`.
 
 ### Railway setup
 1. Create a new Railway service from the `backend` directory.
@@ -56,3 +58,7 @@ The backend is ready for Railway deployment using Docker.
 ### Persistence note
 FAISS, Chroma, and uploaded documents are stored under `DATA_DIR`.
 Without a mounted volume, these files are ephemeral and can be lost on redeploy.
+
+### Automatic reset
+The backend clears `raw_docs`, `vector_store`, and `chroma_db` every `DATA_RESET_DAYS` days.
+The reset runs once on startup and then on a background interval while the app is running.
