@@ -44,6 +44,7 @@ The backend is ready for Railway deployment using Docker.
 - `HF_TOKEN` (required): Hugging Face token for embeddings.
 - `GROQ_API_KEY` (optional): Groq key for answer generation.
 - `CORS_ORIGINS` (recommended): Comma-separated frontend origins.
+- `CORS_ORIGIN_REGEX` (optional): Regex for allowed origins, defaults to Vercel and localhost.
 - `DATA_DIR` (recommended): Persistent data path. Use `/data` with Railway Volume.
 
 ### Railway setup

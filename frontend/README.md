@@ -47,3 +47,4 @@ The frontend is configured for Vercel deployment.
 ### CORS reminder
 Ensure Railway backend `CORS_ORIGINS` includes your Vercel domain, for example:
 `https://your-project.vercel.app`
+The backend now also allows `*.vercel.app` origins by default through `CORS_ORIGIN_REGEX`.
