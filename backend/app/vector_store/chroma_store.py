@@ -3,7 +3,9 @@ from chromadb.config import Settings
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-CHROMA_PATH = os.path.join(BASE_DIR, "data", "chroma_db")
+DATA_DIR = os.getenv("DATA_DIR", os.path.join(BASE_DIR, "data"))
+CHROMA_PATH = os.path.join(DATA_DIR, "chroma_db")
+os.makedirs(CHROMA_PATH, exist_ok=True)
 
 
 class ChromaStore:

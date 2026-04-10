@@ -2,9 +2,10 @@ import re
 from typing import Dict, List, Tuple
 
 from fastapi import APIRouter
+import numpy as np
 from pydantic import BaseModel
 
-from app.embeddings.embedder import Embedder
+from app.embeddings.embedder import embed
 from app.vector_store.index_instance import faiss_index
 from app.vector_store import chroma_store
 from app.llm.groq_llm import GroqLLM
@@ -12,7 +13,6 @@ from app.utils.metrics import metrics
 import time
 
 router = APIRouter()
-embedder = Embedder()
 llm = GroqLLM()
 
 
@@ -61,7 +61,7 @@ def _hybrid_search(
         Tuple of (chunk_ids, hybrid_scores, chunk_details)
     """
     # 1️⃣ Semantic Search via FAISS
-    query_embedding = embedder.embed_texts([query])
+    query_embedding = np.array([embed(query)], dtype=np.float32)
     semantic_chunk_ids, semantic_scores = faiss_index.search_with_scores(query_embedding, top_k * 2)
     
     if not semantic_chunk_ids:
@@ -158,7 +158,7 @@ async def query_documents(request: QueryRequest):
         print(f"DEBUG: Hybrid search returned {len(chunk_ids)} chunk_ids")
     else:
         # Fallback to semantic-only search
-        query_embedding = embedder.embed_texts([query])
+        query_embedding = np.array([embed(query)], dtype=np.float32)
         chunk_ids, similarities = faiss_index.search_with_scores(query_embedding, top_k)
         hybrid_scores = {
             chunk_id: score 

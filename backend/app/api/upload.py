@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, status
 import uuid
 import os
 from typing import List, Optional
+import numpy as np
 
 from app.ingestion.docx_loader import (
     extract_text_from_docx,
@@ -15,7 +16,7 @@ from app.ingestion.chunking import (
     merge_empty_parent_chunks,
 )
 
-from app.embeddings.embedder import Embedder
+from app.embeddings.embedder import embed
 from app.vector_store import chroma_store
 
 from app.vector_store.index_instance import faiss_index
@@ -23,9 +24,9 @@ from app.vector_store.index_instance import faiss_index
 
 
 router = APIRouter()
-embedder = Embedder()
 
-UPLOAD_DIR = "data/raw_docs"
+DATA_DIR = os.getenv("DATA_DIR", "data")
+UPLOAD_DIR = os.path.join(DATA_DIR, "raw_docs")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 120
@@ -123,7 +124,7 @@ async def upload_document(
 
     if indexed_chunks:
         texts = [" ".join(c["content"]) for c in indexed_chunks]
-        embeddings = embedder.embed_texts(texts)
+        embeddings = np.array([embed(text) for text in texts], dtype=np.float32)
 
         faiss_index.add_vectors(
             embeddings,

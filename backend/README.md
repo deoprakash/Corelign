@@ -12,7 +12,7 @@ FastAPI backend for the implemented document ingestion and retrieval system.
 - `app/api/upload.py` for file ingestion and indexing.
 - `app/api/query.py` for retrieval and answer generation.
 - `app/ingestion/` for PDF/DOCX extraction and semantic chunking.
-- `app/embeddings/embedder.py` for sentence-transformer embeddings.
+- `app/embeddings/embedder.py` for Hugging Face Inference API embeddings.
 - `app/vector_store/` for FAISS and Chroma persistence.
 - `app/llm/groq_llm.py` for optional Groq-backed answer generation.
 - `app/utils/metrics.py` for query timing logs.
@@ -30,3 +30,28 @@ FastAPI backend for the implemented document ingestion and retrieval system.
 ## Notes
 - The backend code currently exposes direct upload/query endpoints rather than a full agent runtime.
 - This README only documents code that exists in the backend repository.
+
+## Railway Deployment
+The backend is ready for Railway deployment using Docker.
+
+### Files added for deployment
+- `Dockerfile` builds and runs FastAPI with Uvicorn.
+- `railway.toml` configures Railway build and health checks.
+- `.dockerignore` reduces image size and avoids leaking local files.
+- `.env.example` documents required and optional runtime variables.
+
+### Environment variables
+- `HF_TOKEN` (required): Hugging Face token for embeddings.
+- `GROQ_API_KEY` (optional): Groq key for answer generation.
+- `CORS_ORIGINS` (recommended): Comma-separated frontend origins.
+- `DATA_DIR` (recommended): Persistent data path. Use `/data` with Railway Volume.
+
+### Railway setup
+1. Create a new Railway service from the `backend` directory.
+2. Attach a Volume and mount it at `/data`.
+3. Set environment variables from `.env.example`.
+4. Deploy. Railway uses `railway.toml` and `Dockerfile` automatically.
+
+### Persistence note
+FAISS, Chroma, and uploaded documents are stored under `DATA_DIR`.
+Without a mounted volume, these files are ephemeral and can be lost on redeploy.

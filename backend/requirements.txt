@@ -5,7 +5,7 @@ pydantic
 python-docx
 faiss-cpu
 chromadb
-sentence-transformers
+huggingface_hub
 langchain
 langchain-groq
 python-dotenv
