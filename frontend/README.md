@@ -23,3 +23,27 @@ React + Vite user interface for the Corelign document ingestion and retrieval wo
 
 ## Notes
 - This README only describes the implemented frontend code in the repository.
+
+## Vercel Deployment
+The frontend is configured for Vercel deployment.
+
+### Files added for deployment
+- `vercel.json` enables Vite framework settings and SPA rewrites.
+- `.env.production` points to the Railway backend.
+- `.env.development` keeps local development on localhost backend.
+- `.env.example` documents environment variable usage.
+
+### Backend URL wiring
+- Production API base is set to `https://corelign-production.up.railway.app`.
+- The app reads `VITE_API_BASE` via `src/hooks/useApiBase.js`.
+
+### Deploy steps
+1. Import the `frontend` folder as a Vercel project.
+2. Framework preset: Vite.
+3. Build command: `npm run build`.
+4. Output directory: `dist`.
+5. Set environment variable `VITE_API_BASE=https://corelign-production.up.railway.app` in Vercel Project Settings.
+
+### CORS reminder
+Ensure Railway backend `CORS_ORIGINS` includes your Vercel domain, for example:
+`https://your-project.vercel.app`
