@@ -1,10 +1,8 @@
-import React, { useContext } from 'react'
-import { AppContext } from '../context/AppContext'
+import React from 'react'
+import { Link } from 'react-router-dom'
 import logo from '../assets/corelignLogo.png'
 
 export default function Footer() {
-  const { setView } = useContext(AppContext)
-
   return (
     <footer className="border-t border-slate-100 bg-white/50">
       <div className="mx-auto flex max-w-[1600px] flex-col gap-8 px-6 py-10 md:flex-row md:justify-between">
@@ -55,9 +53,9 @@ export default function Footer() {
           <div>
             <p className="text-xs font-semibold text-slate-500">Company</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li><button type="button" onClick={() => setView('aboutUs')} className="hover:text-slate-900">About</button></li>
-              <li><button type="button" onClick={() => setView('workspace')} className="hover:text-slate-900">Workspace</button></li>
-              <li><button type="button" onClick={() => setView('contactUs')} className="hover:text-slate-900">Contact</button></li>
+              <li><Link to="/about" className="hover:text-slate-900">About</Link></li>
+              <li><Link to="/workspace" className="hover:text-slate-900">Workspace</Link></li>
+              <li><Link to="/contact" className="hover:text-slate-900">Contact</Link></li>
             </ul>
           </div>
 

@@ -1,11 +1,9 @@
-import { useContext } from 'react'
+import { Link } from 'react-router-dom'
 import { stats, features } from '../constants'
-import { AppContext } from '../context/AppContext'
 import PageTransition from '../components/PageTransition'
 import ScrollReveal, { ScrollRevealGroup } from '../components/ScrollReveal'
 
 export default function Home() {
-  const { view, setView } = useContext(AppContext)
   return (
     <PageTransition>
       <section className="relative grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
@@ -30,7 +28,9 @@ export default function Home() {
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <ScrollReveal direction="up" delay={0.12}>
-              <button className="btn-primary" type="button" onClick={() => setView('workspace')}>Start indexing</button>
+              <Link className="btn-primary inline-flex items-center" to="/workspace">
+                Start indexing
+              </Link>
             </ScrollReveal>
             <ScrollReveal direction="up" delay={0.14}>
               <button className="btn-ghost">See security brief</button>

@@ -1,9 +1,8 @@
-import { useContext } from 'react'
-import { AppContext } from '../context/AppContext'
+import { NavLink } from 'react-router-dom'
 import logo from '../assets/corelignLogo.png'
 
 export default function Header() {
-  const { view, setView } = useContext(AppContext)
+  const linkClass = ({ isActive }) => (isActive ? 'text-slate-900' : 'hover:text-slate-900')
 
   return (
     <header className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 pb-4 pt-8">
@@ -17,34 +16,18 @@ export default function Header() {
         </div>
       </div>
       <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-        <button
-          className={view === 'landing' ? 'text-slate-900' : 'hover:text-slate-900'}
-          onClick={() => setView('landing')}
-          type="button"
-        >
+        <NavLink to="/" end className={linkClass}>
           Home
-        </button>
-        <button
-          className={view === 'aboutUs' ? 'text-slate-900' : 'hover:text-slate-900'}
-          onClick={() => setView('aboutUs')}
-          type="button"
-        >
+        </NavLink>
+        <NavLink to="/about" className={linkClass}>
           About Us
-        </button>
-        <button
-          className={view === 'workspace' ? 'text-slate-900' : 'hover:text-slate-900'}
-          onClick={() => setView('workspace')}
-          type="button"
-        >
+        </NavLink>
+        <NavLink to="/workspace" className={linkClass}>
           Workspace
-        </button>
-        <button
-          className={view === 'insights' ? 'text-slate-900' : 'hover:text-slate-900'}
-          onClick={() => setView('insights')}
-          type="button"
-        >
+        </NavLink>
+        <NavLink to="/insights" className={linkClass}>
           Insights
-        </button>
+        </NavLink>
         <button className="btn-primary">Book a demo</button>
       </nav>
     </header>

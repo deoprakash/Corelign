@@ -1,5 +1,4 @@
-import { useContext } from 'react'
-import { AppContext } from './context/AppContext'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Header from './components/Header'
 import Home from './pages/Home'
 import Workspace from './pages/Workspace'
@@ -11,25 +10,29 @@ import { NotificationProvider } from './context/NotificationContext'
 import ToastContainer from './components/ToastContainer'
 
 function App() {
-  const { view } = useContext(AppContext)
-
   return (
     <NotificationProvider>
-      <div className="relative overflow-hidden">
-        <Header />
+      <BrowserRouter>
+        <div className="relative overflow-hidden">
+          <Header />
 
-        <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-16 px-6 pb-20 pt-4">
-          {view === 'workspace' && <Workspace />}
-          {view === 'landing' && <Home />}
-          {view === 'aboutUs' && <AboutUs />}
-          {view === 'insights' && <Insights />}
-          {view === 'contactUs' && <ContactUs />}
-        </main>
+          <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-16 px-6 pb-20 pt-4">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/workspace" element={<Workspace />} />
+              <Route path="/insights" element={<Insights />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/contact" element={<ContactUs />} />
+              <Route path="/about-us" element={<Navigate to="/about" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
 
-        <Footer />
+          <Footer />
 
-        <ToastContainer />
-      </div>
+          <ToastContainer />
+        </div>
+      </BrowserRouter>
     </NotificationProvider>
   )
 }

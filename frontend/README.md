@@ -10,11 +10,17 @@ React + Vite user interface for the Corelign document ingestion and retrieval wo
 - `frontend/src/components/ToastContainer.jsx` and `frontend/src/context/NotificationContext.jsx` provide notifications.
 
 ## Supporting Frontend Areas
-- `frontend/src/context/AppContext.jsx` controls the active view.
 - `frontend/src/lib/api.js` provides fetch helpers.
 - `frontend/src/hooks/useApiBase.js` resolves the backend base URL.
 - `frontend/src/pages/Insights.jsx` shows metrics-style charts and summary visuals.
 - `frontend/src/pages/AboutUs.jsx` and `frontend/src/pages/ContactUs.jsx` provide static content pages.
+
+## Routes
+- `/` renders the home screen.
+- `/workspace` renders the workspace screen.
+- `/insights` renders the insights screen.
+- `/about` renders the about screen.
+- `/contact` renders the contact screen.
 
 ## Current Integration
 - The upload panel posts files to `POST /upload/upload`.

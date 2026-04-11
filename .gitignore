@@ -69,6 +69,9 @@ frontend/.env
 frontend/.env.local
 frontend/.env.*.local
 
+# Vercel CLI metadata
+.vercel/
+
 # Backend caches/build
 backend/__pycache__/
 backend/.pytest_cache/
