@@ -10,3 +10,5 @@ langchain
 langchain-groq
 python-dotenv
 pdfplumber
+google-api-python-client
+google-auth

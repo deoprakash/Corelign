@@ -49,20 +49,18 @@ The backend is ready for Railway deployment using Docker.
 - `DATA_DIR` (recommended): Persistent data path. Use `/data` with Railway Volume.
 - `DATA_RESET_DAYS` (optional): Reset interval in days. Default is `3`.
 - `DATA_RESET_CHECK_INTERVAL_HOURS` (optional): How often the app checks the reset timer. Default is `24`.
-- `SMTP_HOST` (required for demo email): Use `smtp.gmail.com` for Gmail.
-- `SMTP_PORT` (required for demo email): Use `587` for Gmail TLS.
-- `SMTP_USERNAME` (required for demo email): Your Gmail address.
-- `SMTP_PASSWORD` (required for demo email): Gmail App Password (16 characters).
-- `SMTP_FROM_EMAIL` (recommended): Sender email shown in outgoing demo requests.
-- `SMTP_USE_TLS` (optional): Set `true` for Gmail on port `587`.
+- `GOOGLE_CLIENT_ID` (required for demo email): Google OAuth client ID.
+- `GOOGLE_CLIENT_SECRET` (required for demo email): Google OAuth client secret.
+- `GOOGLE_REFRESH_TOKEN` (required for demo email): OAuth refresh token with Gmail send scope.
+- `GMAIL_SENDER_EMAIL` (required for demo email): Gmail address that sends demo emails.
 - `DEMO_RECEIVER_EMAIL` (required for demo email): Inbox where demo requests are delivered.
 
-### Gmail setup for demo requests
-1. Enable 2-Step Verification on your Google account.
-2. Create a Gmail App Password for Mail.
-3. Set `SMTP_HOST=smtp.gmail.com` and `SMTP_PORT=587`.
-4. Set `SMTP_USERNAME` to your Gmail address.
-5. Set `SMTP_PASSWORD` to the generated App Password.
+### Gmail API setup for demo requests
+1. Create a Google Cloud project and enable the Gmail API.
+2. Configure OAuth consent screen and create OAuth client credentials.
+3. Obtain a refresh token with scope `https://www.googleapis.com/auth/gmail.send`.
+4. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REFRESH_TOKEN` in Railway.
+5. Set `GMAIL_SENDER_EMAIL` to the Gmail address authorized by OAuth.
 6. Set `DEMO_RECEIVER_EMAIL=deoprakash364@gmail.com`.
 
 ### Railway setup
