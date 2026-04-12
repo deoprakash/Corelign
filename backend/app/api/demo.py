@@ -98,9 +98,10 @@ async def send_demo_request(payload: DemoRequest):
             detail=str(cfg_error),
         ) from cfg_error
     except Exception as exc:
+        print(f"Demo email send failed: {exc!r}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail='Failed to send demo request emails.',
+            detail=f"Failed to send demo request emails: {type(exc).__name__}",
         ) from exc
 
     return {
