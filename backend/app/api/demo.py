@@ -49,7 +49,7 @@ def _build_user_confirmation_email(payload: DemoRequest, sender: str) -> EmailMe
 
     body = (
         f'Hi {payload.name},\n\n'
-        'Thanks for reaching out to Corelign. We have received your demo request and will contact you shortly.\n\n'
+        'Thanks for reaching out to Corelign. \nWe have received your demo request and will contact you shortly.\n\n'
         'Your submitted details:\n'
         f'- Name: {payload.name}\n'
         f'- Email: {payload.email}\n'
