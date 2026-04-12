@@ -5,6 +5,7 @@ FastAPI backend for the implemented document ingestion and retrieval system.
 ## Current API
 - `POST /upload/upload` accepts one or more PDF or DOCX files.
 - `POST /query` accepts a question and returns an answer with retrieved chunks and confidence.
+- `POST /demo-request` accepts contact details, sends a notification to the owner inbox, and sends a confirmation email to the requester.
 - `GET /` returns a simple health check response.
 
 ## Implemented Backend Areas
@@ -48,6 +49,21 @@ The backend is ready for Railway deployment using Docker.
 - `DATA_DIR` (recommended): Persistent data path. Use `/data` with Railway Volume.
 - `DATA_RESET_DAYS` (optional): Reset interval in days. Default is `3`.
 - `DATA_RESET_CHECK_INTERVAL_HOURS` (optional): How often the app checks the reset timer. Default is `24`.
+- `SMTP_HOST` (required for demo email): Use `smtp.gmail.com` for Gmail.
+- `SMTP_PORT` (required for demo email): Use `587` for Gmail TLS.
+- `SMTP_USERNAME` (required for demo email): Your Gmail address.
+- `SMTP_PASSWORD` (required for demo email): Gmail App Password (16 characters).
+- `SMTP_FROM_EMAIL` (recommended): Sender email shown in outgoing demo requests.
+- `SMTP_USE_TLS` (optional): Set `true` for Gmail on port `587`.
+- `DEMO_RECEIVER_EMAIL` (required for demo email): Inbox where demo requests are delivered.
+
+### Gmail setup for demo requests
+1. Enable 2-Step Verification on your Google account.
+2. Create a Gmail App Password for Mail.
+3. Set `SMTP_HOST=smtp.gmail.com` and `SMTP_PORT=587`.
+4. Set `SMTP_USERNAME` to your Gmail address.
+5. Set `SMTP_PASSWORD` to the generated App Password.
+6. Set `DEMO_RECEIVER_EMAIL=deoprakash364@gmail.com`.
 
 ### Railway setup
 1. Create a new Railway service from the `backend` directory.

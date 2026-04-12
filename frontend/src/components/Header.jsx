@@ -28,7 +28,12 @@ export default function Header() {
         <NavLink to="/insights" className={linkClass}>
           Insights
         </NavLink>
-        <button className="btn-primary">Book a demo</button>
+        <NavLink to="/download" className={linkClass}>
+          Download
+        </NavLink>
+        <NavLink to="/book-demo" className="btn-primary">
+          Book a demo
+        </NavLink>
       </nav>
     </header>
   )

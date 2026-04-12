@@ -5,6 +5,8 @@ import Workspace from './pages/Workspace'
 import AboutUs from './pages/AboutUs'
 import ContactUs from './pages/ContactUs'
 import Insights from './pages/Insights'
+import BookDemo from './pages/BookDemo'
+import Download from './pages/Download'
 import Footer from './components/Footer'
 import { NotificationProvider } from './context/NotificationContext'
 import ToastContainer from './components/ToastContainer'
@@ -23,6 +25,8 @@ function App() {
               <Route path="/insights" element={<Insights />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/contact" element={<ContactUs />} />
+              <Route path="/book-demo" element={<BookDemo />} />
+              <Route path="/download" element={<Download />} />
               <Route path="/about-us" element={<Navigate to="/about" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

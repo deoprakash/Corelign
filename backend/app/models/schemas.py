@@ -14,3 +14,15 @@ class QueryRequest(BaseModel):
 class QueryResponse(BaseModel):
     answer: str
     retrieved_chunks: List[str]
+
+
+class DemoRequest(BaseModel):
+    name: str
+    email: str
+    contact_number: str
+    message: str
+
+
+class DemoRequestResponse(BaseModel):
+    status: str
+    message: str

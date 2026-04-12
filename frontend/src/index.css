@@ -24,7 +24,7 @@ body {
 
 @layer components {
   .glass {
-    @apply bg-white/70 backdrop-blur border border-white/60 shadow-xl shadow-slate-200/60;
+    @apply bg-white/60 backdrop-blur-xl border border-white/50 shadow-2xl shadow-slate-200/55;
   }
 
   .pill {
@@ -32,11 +32,38 @@ body {
   }
 
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/30 transition hover:-translate-y-0.5 hover:bg-teal-600;
+    @apply inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/35 ring-1 ring-teal-500/25 transition duration-300 hover:-translate-y-0.5 hover:bg-teal-600 hover:shadow-xl hover:shadow-teal-500/45;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400 hover:text-slate-900;
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-white/70 hover:text-slate-900;
+  }
+
+  .interactive-card {
+    @apply transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-teal-200/45;
+  }
+
+  .micro-pill {
+    @apply transition duration-300 hover:-translate-y-0.5 hover:scale-[1.02];
+  }
+
+  .glow-accent {
+    @apply relative;
+  }
+
+  .glow-accent::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.24) 0%, rgba(20, 184, 166, 0) 70%);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 250ms ease;
+  }
+
+  .glow-accent:hover::after {
+    opacity: 1;
   }
 
   /* Simple reveal utility to replace framer-motion */

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import upload, query
+from app.api import upload, query, demo
 from app.utils.storage_reset import ensure_storage_reset, storage_reset_loop
 
 
@@ -47,6 +47,7 @@ app.add_middleware(
 
 app.include_router(upload.router, prefix="/upload", tags=["Upload"])
 app.include_router(query.router, tags=["Query"])
+app.include_router(demo.router, tags=["Demo"])
 
 @app.get("/")
 def health_check():
