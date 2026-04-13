@@ -16,6 +16,7 @@
 import os
 from pathlib import Path
 
+import httpx
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
@@ -23,6 +24,7 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env")
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_TIMEOUT_SECONDS = float(os.getenv("EMBEDDING_TIMEOUT_SECONDS", "120"))
 
 
 def _normalize_embedding(result):
@@ -42,6 +44,13 @@ def embed(text):
     if not HF_TOKEN:
         raise RuntimeError("HF_TOKEN is not set. Configure it in your environment.")
 
-    client = InferenceClient(api_key=HF_TOKEN, timeout=30)
-    result = client.feature_extraction(text, model=MODEL_ID)
+    client = InferenceClient(api_key=HF_TOKEN, timeout=EMBEDDING_TIMEOUT_SECONDS)
+
+    try:
+        result = client.feature_extraction(text, model=MODEL_ID)
+    except httpx.ReadTimeout as exc:
+        raise TimeoutError(
+            "Embedding request timed out while calling Hugging Face. Try again, increase EMBEDDING_TIMEOUT_SECONDS, or reduce upload size."
+        ) from exc
+
     return _normalize_embedding(result)

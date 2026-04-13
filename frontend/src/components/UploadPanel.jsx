@@ -9,6 +9,8 @@ export default function UploadPanel() {
   const [isDragging, setIsDragging] = useState(false)
 
   const fileInputRef = useRef(null)
+  const activeRequestRef = useRef(null)
+  const uploadCanceledRef = useRef(false)
   const { push } = useNotification()
 
   const handleUpload = async (event) => {
@@ -18,21 +20,51 @@ export default function UploadPanel() {
       return
     }
 
+    uploadCanceledRef.current = false
     setUploadState({ status: 'loading', message: 'Uploading documents...', progress: 0 })
 
     try {
       const formData = new FormData()
       selectedFiles.forEach((file) => formData.append('files', file))
 
-      const response = await fetch(`${apiBase}/upload/upload`, {
-        method: 'POST',
-        body: formData,
-      })
+      const data = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        activeRequestRef.current = xhr
 
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        throw new Error(data?.detail || 'Upload failed')
-      }
+        xhr.open('POST', `${apiBase}/upload/upload`)
+        xhr.responseType = 'json'
+
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return
+          const progress = Math.max(1, Math.min(95, Math.round((event.loaded / event.total) * 100)))
+          setUploadState((current) => (current.status === 'loading' ? { ...current, progress } : current))
+        }
+
+        xhr.onload = () => {
+          activeRequestRef.current = null
+          const responseData = xhr.response || {}
+          if (xhr.status >= 200 && xhr.status < 300) {
+            setUploadState((current) => (current.status === 'loading' ? { ...current, progress: 100 } : current))
+            resolve(responseData)
+            return
+          }
+
+          reject(new Error(responseData?.detail || responseData?.message || 'Upload failed'))
+        }
+
+        xhr.onerror = () => {
+          activeRequestRef.current = null
+          reject(new Error('Upload failed due to a network error'))
+        }
+
+        xhr.onabort = () => {
+          activeRequestRef.current = null
+          uploadCanceledRef.current = true
+          reject(new Error('Upload canceled'))
+        }
+
+        xhr.send(formData)
+      })
 
       setUploadState({
         status: 'success',
@@ -43,12 +75,19 @@ export default function UploadPanel() {
         push({ type: 'success', title: 'Upload complete', message: `Uploaded ${data.files_indexed ?? selectedFiles.length} files.` })
       } catch (e) {}
     } catch (error) {
+      if (uploadCanceledRef.current || error.message === 'Upload canceled') {
+        uploadCanceledRef.current = false
+        return
+      }
       setUploadState({ status: 'error', message: error.message, progress: 0 })
       try { push({ type: 'error', title: 'Upload failed', message: error.message }) } catch (e) {}
     }
   }
 
   const handleCancelUpload = () => {
+    uploadCanceledRef.current = true
+    activeRequestRef.current?.abort?.()
+    activeRequestRef.current = null
     setUploadState({ status: 'idle', message: '', progress: 0 })
   }
 

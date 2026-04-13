@@ -130,7 +130,18 @@ async def upload_document(
 
     if indexed_chunks:
         texts = [" ".join(c["content"]) for c in indexed_chunks]
-        embeddings = np.array([embed(text) for text in texts], dtype=np.float32)
+        try:
+            embeddings = np.array([embed(text) for text in texts], dtype=np.float32)
+        except TimeoutError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail=str(exc),
+            ) from exc
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(exc),
+            ) from exc
 
         faiss_index.add_vectors(
             embeddings,
