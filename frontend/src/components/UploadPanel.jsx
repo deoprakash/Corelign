@@ -72,7 +72,7 @@ export default function UploadPanel() {
           onDrop={handleDrop}
         >
           <input
-            accept=".pdf,.docx,.doc"
+            accept=".pdf,.docx"
             className="hidden"
             multiple
             onChange={(event) => setSelectedFiles(Array.from(event.target.files || []))}

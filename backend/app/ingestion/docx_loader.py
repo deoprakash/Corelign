@@ -8,7 +8,12 @@ def extract_text_from_docx(file_path: str) -> list:
     with robust handling of multi-run paragraphs.
     """
 
-    document = Document(file_path)
+    try:
+        document = Document(file_path)
+    except Exception as exc:
+        raise ValueError(
+            "Invalid DOCX file. Only real .docx documents are supported, not legacy .doc files or corrupted archives."
+        ) from exc
     paragraphs = []
 
     for para in document.paragraphs:
