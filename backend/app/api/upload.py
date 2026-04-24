@@ -159,3 +159,9 @@ async def upload_document(
         "total_chunks_embedded": len(indexed_chunks),
         "documents": document_results,
     }
+
+
+@router.options("/upload")
+async def upload_options():
+    """Handle CORS preflight requests for upload endpoint."""
+    return {}

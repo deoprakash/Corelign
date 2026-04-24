@@ -10,6 +10,7 @@ from app.vector_store.index_instance import faiss_index
 from app.vector_store import chroma_store
 from app.llm.groq_llm import GroqLLM
 from app.utils.metrics import metrics
+from app.mcp import get_mcp
 import time
 
 router = APIRouter()
@@ -123,9 +124,18 @@ class QueryRequest(BaseModel):
 
 @router.post("/query")
 async def query_documents(request: QueryRequest):
-    query = request.query
-    if not query:
+    original_query = request.query
+    if not original_query:
         return {"error": "Query text is required."}
+
+    # ============ MCP PREPROCESSING LAYER ============
+    # Resolve ambiguous references using conversation history
+    mcp = get_mcp()
+    query = mcp.resolve_coreference(original_query)
+    
+    if query != original_query:
+        print(f"DEBUG: MCP rewrite - Original: '{original_query}' -> Rewritten: '{query}'")
+    # ================================================
 
     top_k = request.top_k
     use_hybrid = request.use_hybrid
@@ -186,15 +196,19 @@ async def query_documents(request: QueryRequest):
         print(f"DEBUG: Semantic search returned {len(chunk_ids)} chunk_ids")
 
     if not chunk_ids:
-        return {
+        no_results_answer = "I don't have enough information in the provided context to answer that."
+        response_data = {
             "query": query,
-            "answer": "I don't have enough information in the provided context to answer that.",
+            "answer": no_results_answer,
             "sources": [],
             "chunks": [],
             "confidence": 0.0,
             "semantic_similarity": 0.0,
             "search_mode": "hybrid" if use_hybrid else "semantic",
         }
+        # Add to MCP history even for no-results cases
+        mcp.add_to_history(original_query, no_results_answer)
+        return response_data
 
     t_retr_end = time.perf_counter()
     retrieval_time = t_retr_end - t_retr_start
@@ -221,15 +235,19 @@ async def query_documents(request: QueryRequest):
         context += f"{section_label}:\n{doc}\n\n"
 
     if not context.strip():
-        return {
+        no_results_answer = "I don't have enough information in the provided context to answer that."
+        response_data = {
             "query": query,
-            "answer": "I don't have enough information in the provided context to answer that.",
+            "answer": no_results_answer,
             "sources": [],
             "chunks": [],
             "confidence": 0.0,
             "semantic_similarity": 0.0,
             "search_mode": "hybrid" if use_hybrid else "semantic",
         }
+        # Add to MCP history even for no-results cases
+        mcp.add_to_history(original_query, no_results_answer)
+        return response_data
 
     # Calculate confidence from hybrid scores
     confidence = 0.0
@@ -287,7 +305,7 @@ async def query_documents(request: QueryRequest):
         "keyword_score": round(chunk_details.get(row_id, {}).get("keyword_score", 0.0), 3),
     } for (row_id, _, meta) in rows]
 
-    return {
+    response_data = {
         "query": query,
         "answer": answer,
         "sources": sources,
@@ -300,3 +318,10 @@ async def query_documents(request: QueryRequest):
             "keyword": keyword_weight
         } if use_hybrid else None,
     }
+
+    # ============ MCP HISTORY UPDATE ============
+    # Add this turn to conversation history for future coreference resolution
+    mcp.add_to_history(original_query, answer)
+    # ============================================
+
+    return response_data
