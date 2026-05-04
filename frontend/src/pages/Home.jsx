@@ -120,6 +120,57 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <section id="about-corelign" className="space-y-8">
+        <div className="glass rounded-3xl p-8 lg:p-10">
+          <ScrollReveal direction="up">
+            <p className="pill bg-teal-50 text-teal-700">AI Document Assistant</p>
+            <h2 className="mt-4 font-display text-3xl font-semibold text-slate-900">
+              Retrieval-Augmented Generation (RAG) powered intelligence
+            </h2>
+            <p className="mt-4 text-slate-600">
+              Corelign is a Retrieval-Augmented Generation (RAG) based AI platform that allows users to upload documents such as PDFs and DOCX files, index them using semantic embeddings, and query them using a conversational interface.
+            </p>
+          </ScrollReveal>
+        </div>
+
+        <div>
+          <h3 className="mb-6 font-display text-2xl font-semibold text-slate-900">Key Features</h3>
+          <ScrollRevealGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06} direction="up">
+            {[
+              {
+                title: 'Semantic Document Search',
+                description: 'FAISS and embeddings for intelligent, context-aware retrieval',
+              },
+              {
+                title: 'Hybrid Retrieval',
+                description: 'Combines BM25 and vector search for comprehensive results',
+              },
+              {
+                title: 'Explainable AI Answers',
+                description: 'Get confident responses with source references and citations',
+              },
+              {
+                title: 'Workspace Management',
+                description: 'Organize and manage documents efficiently across projects',
+              },
+              {
+                title: 'Scalable Architecture',
+                description: 'FastAPI backend built for enterprise-grade performance',
+              },
+              {
+                title: 'Multi-Format Support',
+                description: 'Handle PDFs, DOCX, and other document formats seamlessly',
+              },
+            ].map((feature) => (
+              <div key={feature.title} className="glass rounded-2xl p-6">
+                <p className="font-semibold text-slate-900">{feature.title}</p>
+                <p className="mt-2 text-sm text-slate-600">{feature.description}</p>
+              </div>
+            ))}
+          </ScrollRevealGroup>
+        </div>
+      </section>
     </PageTransition>
   )
 }
