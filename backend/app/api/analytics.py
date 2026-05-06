@@ -32,6 +32,9 @@ async def get_client_ip(request: Request):
 @router.post("/track-event")
 async def track_event(request: EventTrackingRequest):
     """Track page view, click, scroll, etc."""
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
+
     success = analytics_db.track_page_view(
         visitor_id=request.visitor_id,
         page=request.page or "/",
@@ -72,6 +75,9 @@ async def track_event(request: EventTrackingRequest):
 @router.post("/track-download")
 async def track_download(request: DownloadTrackingRequest):
     """Track download button click"""
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
+
     success = analytics_db.track_download_button_click(
         platform=request.platform,
         visitor_id=request.visitor_id,
@@ -92,6 +98,9 @@ async def track_download(request: DownloadTrackingRequest):
 @router.post("/track-installer-download")
 async def track_installer_download(request):
     """Track actual installer download"""
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
+
     success = analytics_db.track_installer_download(
         platform=request.platform,
         visitor_id=request.visitor_id,
@@ -111,6 +120,9 @@ async def track_installer_download(request):
 @router.post("/track-app-launch")
 async def track_app_launch(request):
     """Track app launch after installation"""
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
+
     analytics_db.track_app_launch(
         platform=request.platform,
         visitor_id=request.visitor_id,
@@ -122,6 +134,9 @@ async def track_app_launch(request):
 @router.post("/track-file-upload")
 async def track_file_upload(request: FileUploadTrackingRequest):
     """Track file upload in workspace"""
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
+
     analytics_db.track_file_upload(
         visitor_id=request.visitor_id,
         session_id=request.session_id,
@@ -137,6 +152,9 @@ async def track_file_upload(request: FileUploadTrackingRequest):
 @router.post("/track-query")
 async def track_query(request: QueryTrackingRequest):
     """Track query submission in workspace"""
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
+
     analytics_db.track_query(
         visitor_id=request.visitor_id,
         session_id=request.session_id,
@@ -150,6 +168,9 @@ async def track_query(request: QueryTrackingRequest):
 @router.post("/track-error")
 async def track_error(request: ErrorTrackingRequest):
     """Track frontend errors"""
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
+
     analytics_db.track_error(
         error_type=request.event_type,
         visitor_id=request.visitor_id,
@@ -168,6 +189,9 @@ async def track_error(request: ErrorTrackingRequest):
 async def get_dashboard(verified: bool = Header(None), x_admin_password: str = Header(None)):
     """Get complete dashboard overview"""
     verify_admin(x_admin_password)
+
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
     
     overview = analytics_db.get_dashboard_overview(days=30)
     return overview
@@ -177,6 +201,9 @@ async def get_dashboard(verified: bool = Header(None), x_admin_password: str = H
 async def get_visitor_analytics(x_admin_password: str = Header(None), days: int = 30):
     """Get visitor analytics"""
     verify_admin(x_admin_password)
+
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
     
     return {
         "total_visitors": analytics_db.get_total_visitors(days=days),
@@ -190,6 +217,9 @@ async def get_visitor_analytics(x_admin_password: str = Header(None), days: int 
 async def get_download_analytics(x_admin_password: str = Header(None), days: int = 30):
     """Get download analytics"""
     verify_admin(x_admin_password)
+
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
     
     return analytics_db.get_download_analytics(days=days)
 
@@ -198,6 +228,9 @@ async def get_download_analytics(x_admin_password: str = Header(None), days: int
 async def get_page_analytics(x_admin_password: str = Header(None), days: int = 30):
     """Get page visit analytics"""
     verify_admin(x_admin_password)
+
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
     
     return analytics_db.get_page_analytics(days=days)
 
@@ -206,6 +239,9 @@ async def get_page_analytics(x_admin_password: str = Header(None), days: int = 3
 async def get_button_analytics(x_admin_password: str = Header(None), days: int = 30):
     """Get button click analytics"""
     verify_admin(x_admin_password)
+
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
     
     return analytics_db.get_button_click_analytics(days=days)
 
@@ -214,6 +250,9 @@ async def get_button_analytics(x_admin_password: str = Header(None), days: int =
 async def get_device_analytics(x_admin_password: str = Header(None), days: int = 30):
     """Get device breakdown"""
     verify_admin(x_admin_password)
+
+    if not analytics_db.db:
+        raise HTTPException(status_code=503, detail="Analytics database is unavailable")
     
     return analytics_db.get_device_analytics(days=days)
 

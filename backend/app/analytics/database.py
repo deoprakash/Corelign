@@ -1,5 +1,5 @@
 from pymongo import MongoClient, ASCENDING, DESCENDING
-from pymongo.errors import DuplicateKeyError, ServerSelectionTimeoutError, OperationFailure
+from pymongo.errors import DuplicateKeyError, ServerSelectionTimeoutError, OperationFailure, PyMongoError
 from datetime import datetime, timedelta
 from typing import List, Optional
 import os
@@ -20,11 +20,14 @@ class AnalyticsDB:
             self.client.admin.command('ping')
             self.init_collections()
             logger.info("MongoDB connected successfully")
-        except (ServerSelectionTimeoutError, OperationFailure) as e:
+        except (ServerSelectionTimeoutError, OperationFailure, PyMongoError, Exception) as e:
             logger.error(f"MongoDB connection failed: {e}")
             self.client = None
             self.db = None
             # Don't raise - allow server to continue running
+
+    def _db_available(self) -> bool:
+        return self.db is not None
 
     def init_collections(self):
         """Initialize all collections and indexes"""
@@ -183,6 +186,10 @@ class AnalyticsDB:
     def track_scroll(self, visitor_id: str, page: str, scroll_depth: float,
                     session_id: str, ip_address: str) -> bool:
         """Track scroll depth"""
+        if not self._db_available():
+            logger.warning("Database not available for scroll tracking")
+            return False
+
         if self.is_blocked(ip_address, None):
             return False
 
@@ -203,6 +210,10 @@ class AnalyticsDB:
                                    ip_address: str, device_type: str, browser: str,
                                    os: str, user_agent: str) -> bool:
         """Track download button click"""
+        if not self._db_available():
+            logger.warning("Database not available for download tracking")
+            return False
+
         if self.is_blocked(ip_address, None):
             return False
 
@@ -224,6 +235,10 @@ class AnalyticsDB:
                                 ip_address: str, file_size: Optional[float],
                                 download_speed: Optional[float], user_agent: str) -> bool:
         """Track actual installer download"""
+        if not self._db_available():
+            logger.warning("Database not available for installer download tracking")
+            return False
+
         if self.is_blocked(ip_address, None):
             return False
 
@@ -242,6 +257,10 @@ class AnalyticsDB:
 
     def track_app_launch(self, platform: str, visitor_id: str, app_version: Optional[str]) -> bool:
         """Track app launch after installation"""
+        if not self._db_available():
+            logger.warning("Database not available for app launch tracking")
+            return False
+
         self.db.downloads.insert_one({
             "event_type": "app_launched",
             "platform": platform,
@@ -257,6 +276,10 @@ class AnalyticsDB:
                          file_size: Optional[float], file_type: Optional[str],
                          success: bool, duration: Optional[float]) -> bool:
         """Track file upload"""
+        if not self._db_available():
+            logger.warning("Database not available for file upload tracking")
+            return False
+
         self.db.workspace_events.insert_one({
             "event_type": "file_upload",
             "visitor_id": visitor_id,
@@ -273,6 +296,10 @@ class AnalyticsDB:
     def track_query(self, visitor_id: str, session_id: str, query_length: Optional[int],
                    response_time: Optional[float], success: bool) -> bool:
         """Track query submission"""
+        if not self._db_available():
+            logger.warning("Database not available for query tracking")
+            return False
+
         self.db.workspace_events.insert_one({
             "event_type": "query",
             "visitor_id": visitor_id,
@@ -290,6 +317,10 @@ class AnalyticsDB:
                    error_message: Optional[str], error_stack: Optional[str],
                    page: Optional[str], ip_address: str) -> bool:
         """Track errors"""
+        if not self._db_available():
+            logger.warning("Database not available for error tracking")
+            return False
+
         if self.is_blocked(ip_address, None):
             return False
 
@@ -309,6 +340,9 @@ class AnalyticsDB:
 
     def add_blocked_address(self, ip_address: Optional[str], reason: Optional[str]) -> bool:
         """Block an IP address"""
+        if not self._db_available():
+            return False
+
         try:
             self.db.blocked_addresses.insert_one({
                 "ip_address": ip_address,
@@ -321,11 +355,17 @@ class AnalyticsDB:
 
     def remove_blocked_address(self, ip_address: str) -> bool:
         """Unblock an IP address"""
+        if not self._db_available():
+            return False
+
         result = self.db.blocked_addresses.delete_one({"ip_address": ip_address})
         return result.deleted_count > 0
 
     def get_blocked_addresses(self) -> List[dict]:
         """Get all blocked addresses"""
+        if not self._db_available():
+            return []
+
         blocked = list(self.db.blocked_addresses.find({}, {"_id": 0}))
         for item in blocked:
             if "blocked_at" in item:
@@ -336,6 +376,9 @@ class AnalyticsDB:
 
     def get_total_visitors(self, days: int = 30) -> int:
         """Get total unique visitors"""
+        if not self._db_available():
+            return 0
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         unique = self.db.visitors.count_documents({"first_visit": {"$gt": cutoff}})
         return unique
@@ -346,6 +389,9 @@ class AnalyticsDB:
 
     def get_returning_visitors(self, days: int = 30) -> int:
         """Get returning visitors (visit_count > 1)"""
+        if not self._db_available():
+            return 0
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         count = self.db.visitors.count_documents({
             "first_visit": {"$lt": cutoff},
@@ -356,6 +402,9 @@ class AnalyticsDB:
 
     def get_page_analytics(self, days: int = 30) -> List[dict]:
         """Get analytics per page"""
+        if not self._db_available():
+            return []
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
             {"$match": {"event_type": "page_view", "timestamp": {"$gt": cutoff}}},
@@ -382,6 +431,9 @@ class AnalyticsDB:
 
     def get_button_click_analytics(self, days: int = 30) -> List[dict]:
         """Get button click analytics"""
+        if not self._db_available():
+            return []
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
             {"$match": {"event_type": "click", "timestamp": {"$gt": cutoff}, "button_name": {"$ne": None}}},
@@ -407,6 +459,14 @@ class AnalyticsDB:
 
     def get_download_analytics(self, days: int = 30) -> dict:
         """Get download analytics by platform"""
+        if not self._db_available():
+            return {
+                "button_clicks": {"windows": 0, "linux": 0, "mac": 0},
+                "installer_downloads": {"windows": 0, "linux": 0, "mac": 0},
+                "app_launches": {"windows": 0, "linux": 0, "mac": 0},
+                "total_downloads": 0,
+            }
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         
         # Button clicks
@@ -448,6 +508,9 @@ class AnalyticsDB:
 
     def get_device_analytics(self, days: int = 30) -> List[dict]:
         """Get device breakdown"""
+        if not self._db_available():
+            return []
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
             {"$match": {"timestamp": {"$gt": cutoff}, "device_type": {"$ne": None}}},
@@ -470,6 +533,9 @@ class AnalyticsDB:
 
     def get_browser_analytics(self, days: int = 30) -> List[dict]:
         """Get browser breakdown"""
+        if not self._db_available():
+            return []
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
             {"$match": {"timestamp": {"$gt": cutoff}, "browser": {"$ne": None}}},
@@ -493,6 +559,9 @@ class AnalyticsDB:
 
     def get_country_analytics(self, days: int = 30) -> List[dict]:
         """Get geographic breakdown"""
+        if not self._db_available():
+            return []
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
             {"$match": {"last_visit": {"$gt": cutoff}, "country": {"$ne": None}}},
@@ -514,6 +583,14 @@ class AnalyticsDB:
 
     def get_scroll_analytics(self, days: int = 30) -> dict:
         """Get scroll depth analytics"""
+        if not self._db_available():
+            return {
+                "0-25%": {"user_count": 0, "percentage": 0},
+                "25-50%": {"user_count": 0, "percentage": 0},
+                "50-75%": {"user_count": 0, "percentage": 0},
+                "75-100%": {"user_count": 0, "percentage": 0},
+            }
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         
         ranges = {
@@ -546,6 +623,16 @@ class AnalyticsDB:
 
     def get_workspace_analytics(self, days: int = 30) -> dict:
         """Get workspace/demo analytics"""
+        if not self._db_available():
+            return {
+                "successful_uploads": 0,
+                "failed_uploads": 0,
+                "total_uploads": 0,
+                "successful_queries": 0,
+                "failed_queries": 0,
+                "total_queries": 0,
+            }
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         
         uploads = self.db.workspace_events.count_documents({
@@ -583,6 +670,9 @@ class AnalyticsDB:
 
     def get_error_analytics(self, days: int = 1) -> dict:
         """Get error statistics"""
+        if not self._db_available():
+            return {"total_errors": 0, "by_type": {}}
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         
         pipeline = [
@@ -607,6 +697,15 @@ class AnalyticsDB:
 
     def get_session_analytics(self, days: int = 30) -> dict:
         """Get session analytics"""
+        if not self._db_available():
+            return {
+                "total_sessions": 0,
+                "returning_visitors": 0,
+                "new_visitors": 0,
+                "total_unique_visitors": 0,
+                "returning_percentage": 0,
+            }
+
         cutoff = datetime.utcnow() - timedelta(days=days)
         
         total_sessions = self.db.events.distinct(
@@ -638,6 +737,20 @@ class AnalyticsDB:
 
     def get_dashboard_overview(self, days: int = 30) -> dict:
         """Get complete dashboard overview"""
+        if not self._db_available():
+            return {
+                "total_visitors": 0,
+                "unique_visitors_today": 0,
+                "returning_visitors": 0,
+                "session_analytics": self.get_session_analytics(days=days),
+                "download_analytics": self.get_download_analytics(days=days),
+                "button_clicks": [],
+                "top_pages": [],
+                "device_breakdown": [],
+                "error_count_today": 0,
+                "workspace_analytics": self.get_workspace_analytics(days=days),
+            }
+
         today_downloads = self.get_download_analytics(days=1)
         downloads = self.get_download_analytics(days=days)
         
