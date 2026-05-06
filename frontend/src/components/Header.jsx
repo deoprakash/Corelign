@@ -1,40 +1,104 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import logo from '../assets/corelignLogo.png'
 
 export default function Header() {
-  const linkClass = ({ isActive }) => (isActive ? 'text-slate-900' : 'hover:text-slate-900')
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  const linkClass = ({ isActive }) =>
+    isActive ? 'text-slate-900' : 'text-slate-600 transition-colors hover:text-slate-900'
+
+  const mobileLinkClass = ({ isActive }) =>
+    [
+      'rounded-2xl px-4 py-3 transition-colors',
+      isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+    ].join(' ')
 
   return (
-    <header className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-6 pb-4 pt-8">
-      <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center">
-            <img src={logo} alt="Corelign" className="object-contain" />
+    <header className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-6 sm:px-6 sm:pt-8">
+      <div className="rounded-3xl border border-white/60 bg-white/70 px-4 py-4 shadow-lg shadow-slate-900/5 backdrop-blur-xl sm:px-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center sm:h-12 sm:w-12">
+              <img src={logo} alt="Corelign" className="object-contain" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-slate-700 sm:text-xl">Corelign</p>
+              <p className="text-[11px] text-slate-400 sm:text-xs">Intelligent RAG Platform</p>
+            </div>
           </div>
-        <div>
-          <p className="text-xl font-semibold text-slate-600">Corelign</p>
-          <p className="text-xs text-slate-400">Intelligent RAG Platform</p>
+
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:hidden"
+            aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => setIsMenuOpen((open) => !open)}
+          >
+            {isMenuOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4Z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
+              </svg>
+            )}
+          </button>
+
+          <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+            <NavLink to="/" end className={linkClass}>
+              Home
+            </NavLink>
+            <NavLink to="/about" className={linkClass}>
+              About Us
+            </NavLink>
+            <NavLink to="/workspace" className={linkClass}>
+              Workspace
+            </NavLink>
+            <NavLink to="/insights" className={linkClass}>
+              Insights
+            </NavLink>
+            <NavLink to="/download" className={linkClass}>
+              Download
+            </NavLink>
+            <NavLink to="/book-demo" className="btn-primary">
+              Book a demo
+            </NavLink>
+          </nav>
+        </div>
+
+        <div
+          id="mobile-navigation"
+          className={`grid overflow-hidden transition-all duration-300 ease-out md:hidden ${
+            isMenuOpen ? 'mt-4 grid-rows-[1fr] opacity-100' : 'mt-0 grid-rows-[0fr] opacity-0'
+          }`}
+        >
+          <div className="min-h-0">
+            <nav className="flex flex-col gap-2 border-t border-slate-200/80 pt-4 text-sm font-medium">
+              <NavLink to="/" end className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                Home
+              </NavLink>
+              <NavLink to="/about" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                About Us
+              </NavLink>
+              <NavLink to="/workspace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                Workspace
+              </NavLink>
+              <NavLink to="/insights" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                Insights
+              </NavLink>
+              <NavLink to="/download" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+                Download
+              </NavLink>
+              <NavLink to="/book-demo" className="btn-primary mt-2 justify-center" onClick={() => setIsMenuOpen(false)}>
+                Book a demo
+              </NavLink>
+            </nav>
+          </div>
         </div>
       </div>
-      <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-        <NavLink to="/" end className={linkClass}>
-          Home
-        </NavLink>
-        <NavLink to="/about" className={linkClass}>
-          About Us
-        </NavLink>
-        <NavLink to="/workspace" className={linkClass}>
-          Workspace
-        </NavLink>
-        <NavLink to="/insights" className={linkClass}>
-          Insights
-        </NavLink>
-        <NavLink to="/download" className={linkClass}>
-          Download
-        </NavLink>
-        <NavLink to="/book-demo" className="btn-primary">
-          Book a demo
-        </NavLink>
-      </nav>
     </header>
   )
 }
