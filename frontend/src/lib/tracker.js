@@ -12,6 +12,17 @@ const TRACKING_CONFIG = {
 let visitorId = null
 let sessionId = null
 let maxScrollDepth = 0
+let lastTrackedPath = null
+let initialized = false
+
+const DOWNLOAD_BUTTONS = {
+  'download-windows': 'windows',
+  download_windows: 'windows',
+  'download-linux': 'linux',
+  download_linux: 'linux',
+  'download-mac': 'mac',
+  download_mac: 'mac',
+}
 
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -65,15 +76,26 @@ async function getClientIP() {
 }
 
 export async function initTracking() {
-  if (!TRACKING_CONFIG.ENABLED) return
+  if (!TRACKING_CONFIG.ENABLED || initialized) return
+  initialized = true
 
   visitorId = localStorage.getItem('visitorId') || generateUUID()
   localStorage.setItem('visitorId', visitorId)
   sessionId = generateUUID()
 
-  trackPageView()
+  trackCurrentPage()
   setupScrollTracking()
   setupButtonTracking()
+  setupRouteTracking()
+}
+
+function trackCurrentPage() {
+  const currentPath = window.location.pathname
+  if (currentPath === lastTrackedPath) return
+
+  maxScrollDepth = 0
+  lastTrackedPath = currentPath
+  trackPageView()
 }
 
 export async function trackPageView() {
@@ -138,6 +160,29 @@ function setupButtonTracking() {
   })
 }
 
+function setupRouteTracking() {
+  const notifyRouteChange = () => {
+    window.setTimeout(trackCurrentPage, 0)
+  }
+
+  const originalPushState = window.history.pushState
+  const originalReplaceState = window.history.replaceState
+
+  window.history.pushState = function pushState(...args) {
+    const result = originalPushState.apply(this, args)
+    notifyRouteChange()
+    return result
+  }
+
+  window.history.replaceState = function replaceState(...args) {
+    const result = originalReplaceState.apply(this, args)
+    notifyRouteChange()
+    return result
+  }
+
+  window.addEventListener('popstate', notifyRouteChange)
+}
+
 export async function trackButtonClick(buttonName) {
   if (!visitorId || !buttonName) return
 
@@ -156,6 +201,11 @@ export async function trackButtonClick(buttonName) {
     os,
     user_agent: navigator.userAgent,
   })
+
+  const downloadPlatform = DOWNLOAD_BUTTONS[buttonName]
+  if (downloadPlatform) {
+    sendDownload(downloadPlatform, clientIP, browser, os)
+  }
 }
 
 export async function trackDownloadClick(platform) {
@@ -176,6 +226,29 @@ export async function trackDownloadClick(platform) {
     os,
     user_agent: navigator.userAgent,
   })
+
+  sendDownload(platform, clientIP, browser, os)
+}
+
+async function sendDownload(platform, clientIP, browser, os) {
+  try {
+    await fetch(`${TRACKING_CONFIG.API_BASE}/analytics/track-download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        platform,
+        visitor_id: visitorId,
+        session_id: sessionId,
+        ip_address: clientIP,
+        device_type: getDeviceType(),
+        browser,
+        os,
+        user_agent: navigator.userAgent,
+      }),
+    })
+  } catch (error) {
+    if (TRACKING_CONFIG.DEBUG) console.warn('Failed to track download:', error)
+  }
 }
 
 export async function trackInstallerDownload(platform) {

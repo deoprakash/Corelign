@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import Header from './components/Header'
 import Home from './pages/Home'
@@ -13,19 +12,6 @@ import { NotificationProvider } from './context/NotificationContext'
 import ToastContainer from './components/ToastContainer'
 
 function App() {
-  // Initialize analytics tracking on mount
-  useEffect(() => {
-    import('./lib/tracker.js')
-      .then(module => {
-        if (module.initTracking) {
-          module.initTracking()
-        }
-      })
-      .catch(() => {
-        // Silently fail - analytics not critical
-      })
-  }, [])
-
   return (
     <NotificationProvider>
       <BrowserRouter>
