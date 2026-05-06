@@ -31,7 +31,7 @@ class AnalyticsDB:
 
     def init_collections(self):
         """Initialize all collections and indexes"""
-        if not self.db:
+        if self.db is None:
             logger.warning("Database not initialized, skipping collection setup")
             return
         
@@ -72,7 +72,7 @@ class AnalyticsDB:
 
     def is_blocked(self, ip_address: Optional[str], mac_address: Optional[str]) -> bool:
         """Check if IP or MAC is blocked"""
-        if not self.db:
+        if self.db is None:
             return False
             
         if ip_address:
@@ -89,7 +89,7 @@ class AnalyticsDB:
                      device_type: Optional[str], browser: Optional[str], os: Optional[str],
                      country: Optional[str], state: Optional[str]) -> bool:
         """Track or update visitor"""
-        if not self.db:
+        if self.db is None:
             logger.warning("Database not available for visitor tracking")
             return False
             
@@ -129,7 +129,7 @@ class AnalyticsDB:
                        device_type: Optional[str], browser: Optional[str], os: Optional[str],
                        country: Optional[str], state: Optional[str], user_agent: str) -> bool:
         """Track page view"""
-        if not self.db:
+        if self.db is None:
             logger.warning("Database not available for page view tracking")
             return False
             
@@ -158,7 +158,7 @@ class AnalyticsDB:
     def track_button_click(self, button_name: str, visitor_id: str, page: str, session_id: str,
                           ip_address: str, user_agent: str) -> bool:
         """Track button clicks"""
-        if not self.db:
+        if self.db is None:
             logger.warning("Database not available for button click tracking")
             return False
             
