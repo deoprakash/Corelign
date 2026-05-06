@@ -303,5 +303,3 @@ async function sendEvent(payload) {
     if (TRACKING_CONFIG.DEBUG) console.warn('Failed to send event:', error)
   }
 }
-
-export { initTracking, trackPageView, trackButtonClick, trackDownloadClick, trackFileUpload, trackQuery, trackError }

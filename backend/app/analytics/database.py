@@ -1,54 +1,77 @@
 from pymongo import MongoClient, ASCENDING, DESCENDING
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, ServerSelectionTimeoutError, OperationFailure
 from datetime import datetime, timedelta
 from typing import List, Optional
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DB_NAME = "CorelignWeb-Admin"
 
 class AnalyticsDB:
     def __init__(self, mongo_uri: str = MONGO_URI, db_name: str = DB_NAME):
-        self.client = MongoClient(mongo_uri)
-        self.db = self.client[db_name]
-        self.init_collections()
+        try:
+            # Initialize with longer timeout for connection
+            self.client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000, retryWrites=True)
+            self.db = self.client[db_name]
+            # Test connection immediately
+            self.client.admin.command('ping')
+            self.init_collections()
+            logger.info("MongoDB connected successfully")
+        except (ServerSelectionTimeoutError, OperationFailure) as e:
+            logger.error(f"MongoDB connection failed: {e}")
+            self.client = None
+            self.db = None
+            # Don't raise - allow server to continue running
 
     def init_collections(self):
         """Initialize all collections and indexes"""
-        # Visitors collection
-        self.db.visitors.create_index([("visitor_id", ASCENDING)], unique=True)
-        self.db.visitors.create_index([("ip_address", ASCENDING)])
-        self.db.visitors.create_index([("last_visit", DESCENDING)])
+        if not self.db:
+            logger.warning("Database not initialized, skipping collection setup")
+            return
+        
+        try:
+            # Visitors collection
+            self.db.visitors.create_index([("visitor_id", ASCENDING)], unique=True)
+            self.db.visitors.create_index([("ip_address", ASCENDING)])
+            self.db.visitors.create_index([("last_visit", DESCENDING)])
 
-        # Events collection
-        self.db.events.create_index([("visitor_id", ASCENDING)])
-        self.db.events.create_index([("event_type", ASCENDING)])
-        self.db.events.create_index([("button_name", ASCENDING)])
-        self.db.events.create_index([("timestamp", DESCENDING)])
-        self.db.events.create_index([("page", ASCENDING)])
+            # Events collection
+            self.db.events.create_index([("visitor_id", ASCENDING)])
+            self.db.events.create_index([("event_type", ASCENDING)])
+            self.db.events.create_index([("button_name", ASCENDING)])
+            self.db.events.create_index([("timestamp", DESCENDING)])
+            self.db.events.create_index([("page", ASCENDING)])
 
-        # Downloads collection
-        self.db.downloads.create_index([("visitor_id", ASCENDING)])
-        self.db.downloads.create_index([("platform", ASCENDING)])
-        self.db.downloads.create_index([("event_type", ASCENDING)])
-        self.db.downloads.create_index([("timestamp", DESCENDING)])
+            # Downloads collection
+            self.db.downloads.create_index([("visitor_id", ASCENDING)])
+            self.db.downloads.create_index([("platform", ASCENDING)])
+            self.db.downloads.create_index([("event_type", ASCENDING)])
+            self.db.downloads.create_index([("timestamp", DESCENDING)])
 
-        # Workspace/Demo tracking
-        self.db.workspace_events.create_index([("visitor_id", ASCENDING)])
-        self.db.workspace_events.create_index([("event_type", ASCENDING)])
-        self.db.workspace_events.create_index([("timestamp", DESCENDING)])
+            # Workspace/Demo tracking
+            self.db.workspace_events.create_index([("visitor_id", ASCENDING)])
+            self.db.workspace_events.create_index([("event_type", ASCENDING)])
+            self.db.workspace_events.create_index([("timestamp", DESCENDING)])
 
-        # Errors tracking
-        self.db.errors.create_index([("visitor_id", ASCENDING)])
-        self.db.errors.create_index([("error_type", ASCENDING)])
-        self.db.errors.create_index([("timestamp", DESCENDING)])
+            # Errors tracking
+            self.db.errors.create_index([("visitor_id", ASCENDING)])
+            self.db.errors.create_index([("error_type", ASCENDING)])
+            self.db.errors.create_index([("timestamp", DESCENDING)])
 
-        # Blocked addresses
-        self.db.blocked_addresses.create_index([("ip_address", ASCENDING)])
-        self.db.blocked_addresses.create_index([("mac_address", ASCENDING)])
+            # Blocked addresses
+            self.db.blocked_addresses.create_index([("ip_address", ASCENDING)])
+            self.db.blocked_addresses.create_index([("mac_address", ASCENDING)])
+        except Exception as e:
+            logger.error(f"Error creating indexes: {e}")
 
     def is_blocked(self, ip_address: Optional[str], mac_address: Optional[str]) -> bool:
         """Check if IP or MAC is blocked"""
+        if not self.db:
+            return False
+            
         if ip_address:
             if self.db.blocked_addresses.find_one({"ip_address": ip_address}):
                 return True
@@ -63,31 +86,39 @@ class AnalyticsDB:
                      device_type: Optional[str], browser: Optional[str], os: Optional[str],
                      country: Optional[str], state: Optional[str]) -> bool:
         """Track or update visitor"""
+        if not self.db:
+            logger.warning("Database not available for visitor tracking")
+            return False
+            
         if self.is_blocked(ip_address, None):
             return False
 
-        self.db.visitors.update_one(
-            {"visitor_id": visitor_id},
-            {
-                "$set": {
-                    "ip_address": ip_address,
-                    "user_agent": user_agent,
-                    "device_type": device_type,
-                    "browser": browser,
-                    "os": os,
-                    "country": country,
-                    "state": state,
-                    "last_visit": datetime.utcnow()
+        try:
+            self.db.visitors.update_one(
+                {"visitor_id": visitor_id},
+                {
+                    "$set": {
+                        "ip_address": ip_address,
+                        "user_agent": user_agent,
+                        "device_type": device_type,
+                        "browser": browser,
+                        "os": os,
+                        "country": country,
+                        "state": state,
+                        "last_visit": datetime.utcnow()
+                    },
+                    "$setOnInsert": {
+                        "first_visit": datetime.utcnow(),
+                        "visit_count": 1
+                    },
+                    "$inc": {"visit_count": 1}
                 },
-                "$setOnInsert": {
-                    "first_visit": datetime.utcnow(),
-                    "visit_count": 1
-                },
-                "$inc": {"visit_count": 1}
-            },
-            upsert=True
-        )
-        return True
+                upsert=True
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error tracking visitor: {e}")
+            return False
 
     # ========== PAGE VIEW TRACKING ==========
 
@@ -95,41 +126,57 @@ class AnalyticsDB:
                        device_type: Optional[str], browser: Optional[str], os: Optional[str],
                        country: Optional[str], state: Optional[str], user_agent: str) -> bool:
         """Track page view"""
+        if not self.db:
+            logger.warning("Database not available for page view tracking")
+            return False
+            
         if self.is_blocked(ip_address, None):
             return False
 
-        self.track_visitor(visitor_id, ip_address, user_agent, device_type, browser, os, country, state)
+        try:
+            self.track_visitor(visitor_id, ip_address, user_agent, device_type, browser, os, country, state)
 
-        self.db.events.insert_one({
-            "event_type": "page_view",
-            "page": page,
-            "visitor_id": visitor_id,
-            "session_id": session_id,
-            "ip_address": ip_address,
-            "user_agent": user_agent,
-            "timestamp": datetime.utcnow()
-        })
-        return True
+            self.db.events.insert_one({
+                "event_type": "page_view",
+                "page": page,
+                "visitor_id": visitor_id,
+                "session_id": session_id,
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "timestamp": datetime.utcnow()
+            })
+            return True
+        except Exception as e:
+            logger.error(f"Error tracking page view: {e}")
+            return False
 
     # ========== BUTTON CLICK TRACKING ==========
 
     def track_button_click(self, button_name: str, visitor_id: str, page: str, session_id: str,
                           ip_address: str, user_agent: str) -> bool:
         """Track button clicks"""
+        if not self.db:
+            logger.warning("Database not available for button click tracking")
+            return False
+            
         if self.is_blocked(ip_address, None):
             return False
 
-        self.db.events.insert_one({
-            "event_type": "click",
-            "button_name": button_name,
-            "page": page,
-            "visitor_id": visitor_id,
-            "session_id": session_id,
-            "ip_address": ip_address,
-            "user_agent": user_agent,
-            "timestamp": datetime.utcnow()
-        })
-        return True
+        try:
+            self.db.events.insert_one({
+                "event_type": "click",
+                "button_name": button_name,
+                "page": page,
+                "visitor_id": visitor_id,
+                "session_id": session_id,
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "timestamp": datetime.utcnow()
+            })
+            return True
+        except Exception as e:
+            logger.error(f"Error tracking button click: {e}")
+            return False
 
     # ========== SCROLL TRACKING ==========
 
