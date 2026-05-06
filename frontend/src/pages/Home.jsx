@@ -28,12 +28,12 @@ export default function Home() {
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <ScrollReveal direction="up" delay={0.12}>
-              <Link className="btn-primary inline-flex items-center" to="/workspace">
+              <Link className="btn-primary inline-flex items-center" to="/workspace" data-analytics="home-start-indexing">
                 Start indexing
               </Link>
             </ScrollReveal>
             <ScrollReveal direction="up" delay={0.14}>
-              <button className="btn-ghost">See security brief</button>
+              <button className="btn-ghost" data-analytics="home-security-brief">See security brief</button>
             </ScrollReveal>
           </div>
           <ScrollRevealGroup className="mt-10 grid gap-4 sm:grid-cols-3" stagger={0.06} direction="up">
@@ -56,7 +56,7 @@ export default function Home() {
               <div className="mt-6 rounded-2xl border border-dashed border-teal-200 bg-teal-50/60 p-6 text-center">
                 <p className="text-sm font-medium text-slate-700">Drag & drop or browse</p>
                 <p className="text-xs text-slate-500">Supports PDF & DOCX</p>
-                <button className="btn-primary mt-5">Upload file</button>
+                <button className="btn-primary mt-5" data-analytics="home-upload-file">Upload file</button>
               </div>
 
               <ScrollRevealGroup className="mt-6 space-y-4" stagger={0.04} direction="up">

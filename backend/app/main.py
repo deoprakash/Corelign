@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import upload, query, demo
+from app.api import upload, query, demo, analytics
 from app.utils.storage_reset import ensure_storage_reset, storage_reset_loop
 
 
@@ -33,11 +33,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174")
 allowed_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
 cors_origin_regex = os.getenv(
     "CORS_ORIGIN_REGEX",
-    r"^https://.*\.vercel\.app$|^https://.*\.railway\.app$|^https://.*$|^http://localhost:5173$|^http://127\.0\.0\.1:5173$|^http://192\.168\.\d+\.\d+:5173$|^http://172\.28\.\d+\.\d+:5173$",
+    r"^https://.*\.vercel\.app$|^https://.*\.railway\.app$|^https://.*$|^http://localhost:5173$|^http://127\.0\.0\.1:5173$|^http://localhost:5174$|^http://127\.0\.0\.1:5174$|^http://192\.168\.\d+\.\d+:517[34]$|^http://172\.28\.\d+\.\d+:517[34]$",
 )
 
 app.add_middleware(
@@ -52,6 +52,7 @@ app.add_middleware(
 app.include_router(upload.router, prefix="/upload", tags=["Upload"])
 app.include_router(query.router, tags=["Query"])
 app.include_router(demo.router, tags=["Demo"])
+app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 
 @app.get("/")
 def health_check():

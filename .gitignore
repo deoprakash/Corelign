@@ -69,8 +69,19 @@ frontend/.env
 frontend/.env.local
 frontend/.env.*.local
 
+# Admin app (Vite)
+Admin/node_modules/
+Admin/dist/
+Admin/.vite/
+Admin/.env
+Admin/.env.local
+Admin/.env.*.local
+
 # Vercel CLI metadata
 .vercel/
+
+# Local analytics notes
+ANALYTICS_SETUP_GUIDE.md
 
 # Backend caches/build
 backend/__pycache__/

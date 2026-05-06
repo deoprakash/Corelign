@@ -48,22 +48,22 @@ export default function Header() {
           </button>
 
           <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-            <NavLink to="/" end className={linkClass}>
+            <NavLink to="/" end className={linkClass} data-analytics="nav-home">
               Home
             </NavLink>
-            <NavLink to="/about" className={linkClass}>
+            <NavLink to="/about" className={linkClass} data-analytics="nav-about">
               About Us
             </NavLink>
-            <NavLink to="/workspace" className={linkClass}>
+            <NavLink to="/workspace" className={linkClass} data-analytics="nav-workspace">
               Workspace
             </NavLink>
-            <NavLink to="/insights" className={linkClass}>
+            <NavLink to="/insights" className={linkClass} data-analytics="nav-insights">
               Insights
             </NavLink>
-            <NavLink to="/download" className={linkClass}>
+            <NavLink to="/download" className={linkClass} data-analytics="nav-download">
               Download
             </NavLink>
-            <NavLink to="/book-demo" className="btn-primary">
+            <NavLink to="/book-demo" className="btn-primary" data-analytics="nav-book-demo">
               Book a demo
             </NavLink>
           </nav>
@@ -77,22 +77,22 @@ export default function Header() {
         >
           <div className="min-h-0">
             <nav className="flex flex-col gap-2 border-t border-slate-200/80 pt-4 text-sm font-medium">
-              <NavLink to="/" end className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+              <NavLink to="/" end className={mobileLinkClass} onClick={() => setIsMenuOpen(false)} data-analytics="mobile-nav-home">
                 Home
               </NavLink>
-              <NavLink to="/about" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+              <NavLink to="/about" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)} data-analytics="mobile-nav-about">
                 About Us
               </NavLink>
-              <NavLink to="/workspace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+              <NavLink to="/workspace" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)} data-analytics="mobile-nav-workspace">
                 Workspace
               </NavLink>
-              <NavLink to="/insights" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+              <NavLink to="/insights" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)} data-analytics="mobile-nav-insights">
                 Insights
               </NavLink>
-              <NavLink to="/download" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)}>
+              <NavLink to="/download" className={mobileLinkClass} onClick={() => setIsMenuOpen(false)} data-analytics="mobile-nav-download">
                 Download
               </NavLink>
-              <NavLink to="/book-demo" className="btn-primary mt-2 justify-center" onClick={() => setIsMenuOpen(false)}>
+              <NavLink to="/book-demo" className="btn-primary mt-2 justify-center" onClick={() => setIsMenuOpen(false)} data-analytics="mobile-nav-book-demo">
                 Book a demo
               </NavLink>
             </nav>

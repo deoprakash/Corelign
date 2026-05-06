@@ -88,10 +88,11 @@ export default function Download() {
               <button
                 onClick={() => handleDownload('windows')}
                 className="btn-primary glow-accent inline-flex items-center gap-2"
+                data-analytics="download-hero-button"
               >
                 <span>↓</span> Download
               </button>
-              <Link to="/workspace" className="btn-ghost micro-pill inline-flex items-center gap-2">
+              <Link to="/workspace" className="btn-ghost micro-pill inline-flex items-center gap-2" data-analytics="download-view-demo">
                 <span>▶</span> View Demo
               </Link>
             </div>
@@ -104,7 +105,7 @@ export default function Download() {
                 <div className="rounded-xl border-2 border-dashed border-teal-300 bg-teal-50/50 p-6 text-center">
                   <p className="text-sm text-slate-600">Drag & drop documents or click to browse</p>
                   <p className="mt-1 text-xs text-slate-500">PDF, DOCX, TXT</p>
-                  <button className="btn-primary mt-4 text-sm">Browse Files</button>
+                  <button className="btn-primary mt-4 text-sm" data-analytics="download-browse-files">Browse Files</button>
                 </div>
                 
                 <div className="mt-6 space-y-2">
@@ -245,6 +246,7 @@ export default function Download() {
               <button
                 onClick={() => handleDownload('windows')}
                 className="btn-primary glow-accent w-full"
+                data-analytics="download-windows"
               >
                 Download for Windows
               </button>
@@ -296,6 +298,7 @@ export default function Download() {
               <button
                 onClick={() => handleDownload('linux')}
                 className="btn-primary glow-accent w-full"
+                data-analytics="download-linux"
               >
                 Download for Linux
               </button>

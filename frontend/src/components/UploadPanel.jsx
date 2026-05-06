@@ -121,14 +121,15 @@ export default function UploadPanel() {
           <div className="text-center">
             <p className="text-sm font-medium text-slate-700">{isDragging ? 'Drop files here' : 'Drag & drop files or browse'}</p>
             <p className="text-xs text-slate-500">Supports PDF & DOCX</p>
-            <button className="btn-primary mt-4" type="button" onClick={() => fileInputRef.current?.click()}>Select files</button>
+            <button className="btn-primary mt-4" type="button" onClick={() => fileInputRef.current?.click()} data-analytics="upload-select-files">Select files</button>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button className="btn-primary" type="submit" disabled={uploadState.status === 'loading'}>{uploadState.status === 'loading' ? 'Uploading...' : 'Upload documents'}</button>
+          <button className="btn-primary" type="submit" disabled={uploadState.status === 'loading'} data-analytics="upload-documents">{uploadState.status === 'loading' ? 'Uploading...' : 'Upload documents'}</button>
           {uploadState.status === 'loading' ? (
-            <button className="btn-ghost" type="button" onClick={handleCancelUpload}>Cancel upload</button>
+            <button className="btn-ghost" type="button" onClick={handleCancelUpload} data-analytics="upload-cancel">
+              Cancel upload</button>
           ) : null}
           {selectedFiles.length ? (
             <span className="text-xs text-slate-500">Selected ({selectedFiles.length}): {selectedFiles.slice(0, 3).map((file) => file.name).join(', ')}{selectedFiles.length > 3 ? ', ...' : ''}</span>

@@ -129,7 +129,7 @@ export default function BookDemo() {
           </div>
 
           <div className="pt-2">
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            <button type="submit" className="btn-primary" disabled={isSubmitting} data-analytics="book-demo-submit">
               {isSubmitting ? 'Submitting...' : 'Submit request'}
             </button>
           </div>

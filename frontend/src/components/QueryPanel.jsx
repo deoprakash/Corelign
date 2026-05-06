@@ -126,7 +126,7 @@ export default function QueryPanel() {
           <p className="mt-2 text-xs font-medium text-slate-500">Queries used: {queryCount}/{MAX_QUERY_LIMIT}</p>
         </div>
         <div>
-          <button className="btn-ghost" onClick={clearHistory}>Clear</button>
+          <button className="btn-ghost" onClick={clearHistory} data-analytics="query-clear-history">Clear</button>
         </div>
       </div>
 
@@ -172,8 +172,8 @@ export default function QueryPanel() {
       <form className="mt-4 border-t border-white/50 pt-4" onSubmit={handleSend}>
         <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ask a question about your uploaded documents..." className="min-h-[80px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none focus:border-teal-500 disabled:cursor-not-allowed disabled:opacity-60" disabled={queryCount >= MAX_QUERY_LIMIT} />
         <div className="mt-3 flex items-center gap-3">
-          <button className="btn-primary" type="submit" disabled={status === 'loading' || queryCount >= MAX_QUERY_LIMIT}>{status === 'loading' ? 'Thinking...' : 'Send'}</button>
-          <button className="btn-ghost" type="button" onClick={() => setInputText('')} disabled={queryCount >= MAX_QUERY_LIMIT}>Clear input</button>
+          <button className="btn-primary" type="submit" disabled={status === 'loading' || queryCount >= MAX_QUERY_LIMIT} data-analytics="query-send">{status === 'loading' ? 'Thinking...' : 'Send'}</button>
+          <button className="btn-ghost" type="button" onClick={() => setInputText('')} disabled={queryCount >= MAX_QUERY_LIMIT} data-analytics="query-clear-input">Clear input</button>
         </div>
       </form>
 
@@ -185,7 +185,7 @@ export default function QueryPanel() {
               You have reached the maximum limit of {MAX_QUERY_LIMIT} queries. Please contact support to continue.
             </p>
             <div className="mt-5 flex justify-end">
-              <button className="btn-primary" onClick={() => setShowRestrictionPopup(false)}>
+              <button className="btn-primary" onClick={() => setShowRestrictionPopup(false)} data-analytics="query-limit-popup-close">
                 Got it
               </button>
             </div>
