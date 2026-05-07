@@ -354,3 +354,9 @@ async def get_blocked_ips(x_admin_password: str = Header(None)):
     verify_admin(x_admin_password)
     
     return {"blocked_addresses": analytics_db.get_blocked_addresses()}
+
+
+@router.get("/health")
+async def health_check():
+    """Public health endpoint to check service and DB connectivity"""
+    return {"status": "ok", "db_connected": analytics_db._db_available()}

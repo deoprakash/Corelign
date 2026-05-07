@@ -105,11 +105,18 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(apiUrl('/analytics/admin/dashboard'), {
+        const url = apiUrl('/analytics/admin/dashboard')
+        const response = await fetch(url, {
           headers: { 'x-admin-password': adminPassword },
         })
-        const result = await response.json()
-        setData(result)
+        const text = await response.text()
+        try {
+          const result = JSON.parse(text)
+          setData(result)
+        } catch (err) {
+          console.error('Non-JSON response from', url, 'status', response.status, 'body:', text)
+          throw err
+        }
       } catch (error) {
         console.error('Failed to fetch dashboard:', error)
       } finally {
