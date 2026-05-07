@@ -25,7 +25,18 @@ def verify_admin(x_admin_password: str = Header(None)):
 @router.post("/get-client-ip")
 async def get_client_ip(request: Request):
     """Get client IP address"""
-    client_ip = request.client.host if request.client else "0.0.0.0"
+    # Prefer X-Forwarded-For header (set by proxies like Railway/Vercel)
+    xff = None
+    # Header keys may be lowercase or mixed
+    if request.headers:
+        xff = request.headers.get('x-forwarded-for') or request.headers.get('X-Forwarded-For')
+
+    if xff:
+        # X-Forwarded-For may contain a comma-separated list; take the first public IP
+        client_ip = xff.split(',')[0].strip()
+    else:
+        client_ip = request.client.host if request.client else "0.0.0.0"
+
     return {"ip_address": client_ip}
 
 
