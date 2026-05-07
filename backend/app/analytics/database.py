@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 import os
 import logging
+import urllib.request
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +22,10 @@ class AnalyticsDB:
             self.client.admin.command('ping')
             self.init_collections()
             logger.info("MongoDB connected successfully")
+            print("MongoDB connected successfully")
         except (ServerSelectionTimeoutError, OperationFailure, PyMongoError, Exception) as e:
             logger.error(f"MongoDB connection failed: {e}")
+            print(f"MongoDB connection failed: {e}")
             self.client = None
             self.db = None
             # Don't raise - allow server to continue running
@@ -97,29 +101,51 @@ class AnalyticsDB:
             return False
 
         try:
-            self.db.visitors.update_one(
+            # If country not provided, attempt a lightweight GeoIP lookup
+            if (not country or country in ("", "Unknown", None)) and ip_address:
+                try:
+                    country_lookup = self._lookup_country_from_ip(ip_address)
+                    if country_lookup:
+                        country = country_lookup
+                except Exception:
+                    pass
+            result = self.db.visitors.update_one(
                 {"visitor_id": visitor_id},
-                {
-                    "$set": {
-                        "ip_address": ip_address,
-                        "user_agent": user_agent,
-                        "device_type": device_type,
-                        "browser": browser,
-                        "os": os,
-                        "country": country,
-                        "state": state,
-                        "last_visit": datetime.utcnow()
-                    },
-                    "$setOnInsert": {
-                        "first_visit": datetime.utcnow(),
-                        "visit_count": 1
-                    },
-                    "$inc": {"visit_count": 1}
-                },
+                [
+                    {
+                        "$set": {
+                            "visitor_id": visitor_id,
+                            "ip_address": ip_address,
+                            "user_agent": user_agent,
+                            "device_type": device_type,
+                            "browser": browser,
+                            "os": os,
+                            "country": country,
+                            "state": state,
+                            "last_visit": datetime.utcnow(),
+                            "first_visit": {
+                                "$cond": [
+                                    {"$eq": [{"$ifNull": ["$first_visit", None]}, None]},
+                                    datetime.utcnow(),
+                                    "$first_visit"
+                                ]
+                            },
+                            "visit_count": {
+                                "$cond": [
+                                    {"$eq": [{"$ifNull": ["$visit_count", None]}, None]},
+                                    1,
+                                    {"$add": [{"$ifNull": ["$visit_count", 0]}, 1]}
+                                ]
+                            }
+                        }
+                    }
+                ],
                 upsert=True
             )
+            print(f"✓ Visitor tracked: {visitor_id} (matched={result.matched_count}, upserted={result.upserted_id})")
             return True
         except Exception as e:
+            print(f"✗ Error tracking visitor: {visitor_id} - {e}")
             logger.error(f"Error tracking visitor: {e}")
             return False
 
@@ -137,7 +163,8 @@ class AnalyticsDB:
             return False
 
         try:
-            self.track_visitor(visitor_id, ip_address, user_agent, device_type, browser, os, country, state)
+            visitor_ok = self.track_visitor(visitor_id, ip_address, user_agent, device_type, browser, os, country, state)
+            print(f"Page view for {visitor_id}: visitor_tracked={visitor_ok}")
 
             self.db.events.insert_one({
                 "event_type": "page_view",
@@ -146,17 +173,25 @@ class AnalyticsDB:
                 "session_id": session_id,
                 "ip_address": ip_address,
                 "user_agent": user_agent,
+                "device_type": device_type,
+                "browser": browser,
+                "os": os,
+                "country": country,
+                "state": state,
                 "timestamp": datetime.utcnow()
             })
+            print(f"✓ Page view event logged: {page} for {visitor_id}")
             return True
         except Exception as e:
+            print(f"✗ Error tracking page view: {e}")
             logger.error(f"Error tracking page view: {e}")
             return False
 
     # ========== BUTTON CLICK TRACKING ==========
 
     def track_button_click(self, button_name: str, visitor_id: str, page: str, session_id: str,
-                          ip_address: str, user_agent: str) -> bool:
+                          ip_address: str, user_agent: str, device_type: Optional[str] = None, 
+                          browser: Optional[str] = None, os: Optional[str] = None) -> bool:
         """Track button clicks"""
         if self.db is None:
             logger.warning("Database not available for button click tracking")
@@ -174,6 +209,9 @@ class AnalyticsDB:
                 "session_id": session_id,
                 "ip_address": ip_address,
                 "user_agent": user_agent,
+                "device_type": device_type,
+                "browser": browser,
+                "os": os,
                 "timestamp": datetime.utcnow()
             })
             return True
@@ -372,15 +410,33 @@ class AnalyticsDB:
                 item["blocked_at"] = item["blocked_at"].isoformat()
         return blocked
 
+    def _lookup_country_from_ip(self, ip: str) -> Optional[str]:
+        """Lightweight GeoIP lookup using ip-api.com (no external deps). Returns country name or None."""
+        if not ip or ip in ("0.0.0.0", "127.0.0.1", "::1"):
+            return None
+
+        try:
+            url = f"http://ip-api.com/json/{ip}?fields=status,country"
+            with urllib.request.urlopen(url, timeout=2) as resp:
+                data = resp.read()
+            parsed = json.loads(data.decode('utf-8'))
+            if parsed.get('status') == 'success':
+                return parsed.get('country')
+        except Exception:
+            return None
+        return None
+
     # ========== ANALYTICS QUERIES ==========
 
     def get_total_visitors(self, days: int = 30) -> int:
         """Get total unique visitors"""
         if not self._db_available():
+            print(f"⚠ Database not available for get_total_visitors")
             return 0
 
         cutoff = datetime.utcnow() - timedelta(days=days)
         unique = self.db.visitors.count_documents({"first_visit": {"$gt": cutoff}})
+        print(f"✓ get_total_visitors({days}d): cutoff={cutoff}, count={unique}")
         return unique
 
     def get_unique_visitors_today(self) -> int:
@@ -398,6 +454,7 @@ class AnalyticsDB:
             "last_visit": {"$gt": cutoff},
             "visit_count": {"$gt": 1}
         })
+        print(f"✓ get_returning_visitors({days}d): count={count}")
         return count
 
     def get_page_analytics(self, days: int = 30) -> List[dict]:
@@ -405,6 +462,7 @@ class AnalyticsDB:
         if not self._db_available():
             return []
 
+        cutoff = datetime.utcnow() - timedelta(days=days)
         cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
             {"$match": {"event_type": "page_view", "timestamp": {"$gt": cutoff}}},
@@ -433,6 +491,8 @@ class AnalyticsDB:
         """Get button click analytics"""
         if not self._db_available():
             return []
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
 
         cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
@@ -512,6 +572,8 @@ class AnalyticsDB:
             return []
 
         cutoff = datetime.utcnow() - timedelta(days=days)
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
         pipeline = [
             {"$match": {"timestamp": {"$gt": cutoff}, "device_type": {"$ne": None}}},
             {
@@ -522,7 +584,7 @@ class AnalyticsDB:
             },
             {"$sort": {"count": -1}}
         ]
-        results = list(self.db.visitors.aggregate(pipeline))
+        results = list(self.db.events.aggregate(pipeline))
         total = sum(r["count"] for r in results)
         
         for r in results:
@@ -548,13 +610,61 @@ class AnalyticsDB:
             {"$sort": {"count": -1}},
             {"$limit": 10}
         ]
-        results = list(self.db.visitors.aggregate(pipeline))
+        results = list(self.db.events.aggregate(pipeline))
         total = sum(r["count"] for r in results)
         
         for r in results:
             r["browser"] = r.pop("_id")
             r["percentage"] = round((r["count"] / total) * 100, 2) if total > 0 else 0
         
+        return results
+
+    def get_os_analytics(self, days: int = 30) -> List[dict]:
+        """Get operating system breakdown"""
+        if not self._db_available():
+            return []
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        pipeline = [
+            {"$match": {"timestamp": {"$gt": cutoff}, "os": {"$ne": None}}},
+            {
+                "$group": {
+                    "_id": "$os",
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"count": -1}},
+            {"$limit": 10}
+        ]
+        results = list(self.db.events.aggregate(pipeline))
+        total = sum(r["count"] for r in results)
+
+        for r in results:
+            r["os"] = r.pop("_id")
+            r["percentage"] = round((r["count"] / total) * 100, 2) if total > 0 else 0
+
+        return results
+
+    def get_referrer_analytics(self, days: int = 30) -> List[dict]:
+        """Get top referrers if present in events (field: referrer)"""
+        if not self._db_available():
+            return []
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        pipeline = [
+            {"$match": {"timestamp": {"$gt": cutoff}, "referrer": {"$ne": None}}},
+            {
+                "$group": {
+                    "_id": "$referrer",
+                    "visitors": {"$sum": 1}
+                }
+            },
+            {"$sort": {"visitors": -1}},
+            {"$limit": 10}
+        ]
+        results = list(self.db.events.aggregate(pipeline))
+        for r in results:
+            r["referrer"] = r.pop("_id")
         return results
 
     def get_country_analytics(self, days: int = 30) -> List[dict]:
@@ -753,7 +863,104 @@ class AnalyticsDB:
 
         today_downloads = self.get_download_analytics(days=1)
         downloads = self.get_download_analytics(days=days)
-        
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
+
+        # Page views
+        page_views = self.db.events.count_documents({"event_type": "page_view", "timestamp": {"$gt": cutoff}}) if self._db_available() else 0
+
+        # Bounce rate: sessions with only one page_view (current period)
+        bounce_rate = 0.0
+        try:
+            pipeline = [
+                {"$match": {"event_type": "page_view", "timestamp": {"$gt": cutoff}}},
+                {"$group": {"_id": "$session_id", "views": {"$sum": 1}}},
+                {"$group": {"_id": "$views", "count": {"$sum": 1}}}
+            ]
+            counts = list(self.db.events.aggregate(pipeline))
+            total_sessions = 0
+            single_page_sessions = 0
+            for c in counts:
+                views = c.get("_id")
+                cnt = c.get("count", 0)
+                total_sessions += cnt
+                if views == 1:
+                    single_page_sessions = cnt
+            if total_sessions > 0:
+                bounce_rate = round((single_page_sessions / total_sessions) * 100, 2)
+        except Exception:
+            bounce_rate = 0.0
+
+        # Bounce rate for previous period (to compute delta)
+        bounce_rate_prev = 0.0
+        try:
+            prev_cutoff = datetime.utcnow() - timedelta(days=days*2)
+            prev_window_start = prev_cutoff
+            prev_window_end = datetime.utcnow() - timedelta(days=days)
+            pipeline_prev = [
+                {"$match": {"event_type": "page_view", "timestamp": {"$gt": prev_window_start, "$lte": prev_window_end}}},
+                {"$group": {"_id": "$session_id", "views": {"$sum": 1}}},
+                {"$group": {"_id": "$views", "count": {"$sum": 1}}}
+            ]
+            counts_prev = list(self.db.events.aggregate(pipeline_prev))
+            total_sessions_prev = 0
+            single_page_sessions_prev = 0
+            for c in counts_prev:
+                views = c.get("_id")
+                cnt = c.get("count", 0)
+                total_sessions_prev += cnt
+                if views == 1:
+                    single_page_sessions_prev = cnt
+            if total_sessions_prev > 0:
+                bounce_rate_prev = round((single_page_sessions_prev / total_sessions_prev) * 100, 2)
+        except Exception:
+            bounce_rate_prev = 0.0
+
+        # Compute bounce delta as percentage points difference (current - previous)
+        bounce_delta = None
+        try:
+            if bounce_rate_prev is not None and bounce_rate_prev != 0:
+                bounce_delta = round(((bounce_rate - bounce_rate_prev) / bounce_rate_prev) * 100, 2)
+            elif bounce_rate_prev == 0 and bounce_rate > 0:
+                bounce_delta = 100.0
+            else:
+                bounce_delta = 0.0
+        except Exception:
+            bounce_delta = 0.0
+
+        # Daily visitors timeseries for chart (group by day)
+        daily_visitors = []
+        try:
+            pipeline_days = [
+                {"$match": {"event_type": "page_view", "timestamp": {"$gt": cutoff}}},
+                {"$group": {"_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}}, "visitors": {"$sum": 1}}},
+                {"$sort": {"_id": 1}}
+            ]
+            days_results = list(self.db.events.aggregate(pipeline_days))
+            for d in days_results:
+                daily_visitors.append({"date": d.get("_id"), "visitors": d.get("visitors", 0)})
+        except Exception:
+            daily_visitors = []
+
+        # Daily bounce rate timeseries (per-day sessions with single page view / total sessions)
+        daily_bounce = []
+        try:
+            pipeline_bounce = [
+                {"$match": {"event_type": "page_view", "timestamp": {"$gt": cutoff}}},
+                {"$project": {"date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}}, "session_id": 1}},
+                {"$group": {"_id": {"date": "$date", "session_id": "$session_id"}, "views": {"$sum": 1}}},
+                {"$group": {"_id": "$_id.date", "total_sessions": {"$sum": 1}, "single_page_sessions": {"$sum": {"$cond": [{"$eq": ["$views", 1]}, 1, 0]}}}},
+                {"$sort": {"_id": 1}}
+            ]
+            bounce_results = list(self.db.events.aggregate(pipeline_bounce))
+            for d in bounce_results:
+                total = d.get("total_sessions", 0)
+                single = d.get("single_page_sessions", 0)
+                rate = round((single / total) * 100, 2) if total > 0 else 0.0
+                daily_bounce.append({"date": d.get("_id"), "bounce_rate": rate})
+        except Exception:
+            daily_bounce = []
+
         return {
             "total_visitors": self.get_total_visitors(days=days),
             "unique_visitors_today": self.get_unique_visitors_today(),
@@ -763,6 +970,14 @@ class AnalyticsDB:
             "button_clicks": self.get_button_click_analytics(days=days)[:5],
             "top_pages": self.get_page_analytics(days=days)[:5],
             "device_breakdown": self.get_device_analytics(days=days),
+            "os_breakdown": self.get_os_analytics(days=days),
+            "country_analytics": self.get_country_analytics(days=days),
+            "referrers": self.get_referrer_analytics(days=days)[:10],
+            "page_views": page_views,
+            "bounce_rate": bounce_rate,
+            "bounce_delta": bounce_delta,
+            "daily_visitors": daily_visitors,
+            "daily_bounce": daily_bounce,
             "error_count_today": self.get_error_analytics(days=1)["total_errors"],
             "workspace_analytics": self.get_workspace_analytics(days=days)
         }

@@ -23,7 +23,15 @@ export default function ButtonClickAnalytics() {
         setLoading(false)
       }
     }
+    
+    // Fetch immediately
     fetchData()
+    
+    // Refresh every 5 minutes (300000 ms)
+    const interval = setInterval(fetchData, 300000)
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(interval)
   }, [adminPassword])
 
   if (loading) {

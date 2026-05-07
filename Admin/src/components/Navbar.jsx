@@ -1,6 +1,15 @@
 import { useContext } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AdminContext } from '../context/AdminContext'
+
+const mobileLinks = [
+  { label: 'Dashboard', path: '/' },
+  { label: 'Downloads', path: '/downloads' },
+  { label: 'Visitors', path: '/visitors' },
+  { label: 'Buttons', path: '/buttons' },
+  { label: 'Devices', path: '/devices' },
+  { label: 'Blocked', path: '/blocked' },
+]
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -12,25 +21,39 @@ export default function Navbar() {
     navigate('/login')
   }
 
-  const isActive = (path) => location.pathname === path
-
   return (
-    <nav className="border-b border-slate-200 bg-white shadow-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-teal-700">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-          </svg>
-          <h1 className="text-xl font-bold text-slate-900">Corelign Admin</h1>
-        </div>
+    <header className="mx-auto w-full max-w-[1500px] px-4 pt-4 sm:px-6 lg:px-8">
+      <div className="rounded-3xl border border-white/60 bg-white/70 px-4 py-4 shadow-lg shadow-slate-900/5 backdrop-blur-xl sm:px-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-teal-700">Corelign Admin</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Analytics Dashboard</h1>
+          </div>
 
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-600">Analytics Dashboard</span>
-          <button onClick={handleLogout} className="btn-ghost text-sm">
-            Logout
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200/70 bg-white/55 p-1 lg:hidden">
+              {mobileLinks.map((link) => {
+                const active = location.pathname === link.path
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                      active ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-white hover:text-slate-950'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <button type="button" onClick={handleLogout} className="btn-ghost justify-center bg-white/50">
+              Logout
+            </button>
+          </div>
         </div>
       </div>
-    </nav>
+    </header>
   )
 }

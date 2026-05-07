@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@300;400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -16,11 +16,21 @@ body {
   margin: 0;
   font-family: "Space Grotesk", system-ui, sans-serif;
   color: #0f172a;
-  background: #f8fafc;
+  background: radial-gradient(circle at 15% 20%, rgba(217, 237, 232, 0.9), transparent 60%),
+    radial-gradient(circle at 85% 0%, rgba(254, 230, 214, 0.8), transparent 55%),
+    linear-gradient(160deg, #f7f4ef 0%, #eef5f5 55%, #f5f8ff 100%);
   min-height: 100vh;
 }
 
 @layer components {
+  .glass {
+    @apply bg-white/60 backdrop-blur-xl border border-white/50 shadow-2xl shadow-slate-200/55;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full px-4 py-1 text-sm font-medium;
+  }
+
   .btn-primary {
     @apply inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/35 ring-1 ring-teal-500/25 transition duration-300 hover:-translate-y-0.5 hover:bg-teal-600 hover:shadow-xl hover:shadow-teal-500/45;
   }
@@ -29,7 +39,61 @@ body {
     @apply inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition duration-300 hover:-translate-y-0.5 hover:border-slate-400 hover:bg-white/70 hover:text-slate-900;
   }
 
+  .interactive-card {
+    @apply transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-teal-200/45;
+  }
+
+  .micro-pill {
+    @apply transition duration-300 hover:-translate-y-0.5 hover:scale-[1.02];
+  }
+
+  .glow-accent {
+    @apply relative;
+  }
+
+  .glow-accent::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.24) 0%, rgba(20, 184, 166, 0) 70%);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 250ms ease;
+  }
+
+  .glow-accent:hover::after {
+    opacity: 1;
+  }
+
+  /* Simple reveal utility to replace framer-motion */
+  .reveal {
+    will-change: transform, opacity;
+  }
+
+  .reveal.reveal-visible {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .reveal-group .reveal-item {
+    will-change: transform, opacity;
+  }
+
+  .reveal-group.reveal-visible .reveal-item {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
   .metric-card {
-    @apply rounded-2xl bg-white p-6 shadow-sm border border-slate-100;
+    @apply w-full rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:bg-white/90 hover:shadow-2xl hover:shadow-teal-200/35 disabled:pointer-events-none disabled:opacity-100;
+  }
+}
+
+@layer utilities {
+  .hero-grid {
+    background-image: linear-gradient(transparent 75%, rgba(15, 23, 42, 0.06) 75%),
+      linear-gradient(90deg, transparent 75%, rgba(15, 23, 42, 0.06) 75%);
+    background-size: 28px 28px;
   }
 }

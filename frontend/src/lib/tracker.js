@@ -62,16 +62,28 @@ function getScreenSize() {
 }
 
 async function getClientIP() {
+  // Try a client-side geo-IP lookup first (returns public IP and country).
+  try {
+    const resp = await fetch('https://ipapi.co/json/')
+    if (resp.ok) {
+      const d = await resp.json()
+      return { ip_address: d.ip || '0.0.0.0', country: d.country_name || d.country || null }
+    }
+  } catch (err) {
+    if (TRACKING_CONFIG.DEBUG) console.warn('ipapi lookup failed, falling back to server:', err)
+  }
+
+  // Fallback: ask local backend for client IP (may be 127.0.0.1 in local dev)
   try {
     const response = await fetch(`${TRACKING_CONFIG.API_BASE}/analytics/get-client-ip`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     })
     const data = await response.json()
-    return data.ip_address || '0.0.0.0'
+    return { ip_address: data.ip_address || '0.0.0.0', country: null }
   } catch (error) {
     if (TRACKING_CONFIG.DEBUG) console.warn('Could not get client IP:', error)
-    return '0.0.0.0'
+    return { ip_address: '0.0.0.0', country: null }
   }
 }
 
@@ -102,7 +114,9 @@ export async function trackPageView() {
   if (!visitorId) return
 
   const { browser, os } = getBrowserInfo()
-  const clientIP = await getClientIP()
+  const client = await getClientIP()
+  const clientIP = client.ip_address
+  const clientCountry = client.country
 
   sendEvent({
     event_type: 'page_view',
@@ -110,6 +124,8 @@ export async function trackPageView() {
     visitor_id: visitorId,
     session_id: sessionId,
     ip_address: clientIP,
+    country: clientCountry,
+    referrer: document.referrer || null,
     user_agent: navigator.userAgent,
     device_type: getDeviceType(),
     browser,
@@ -137,8 +153,9 @@ function setupScrollTracking() {
 
 async function trackScroll(scrollDepth) {
   if (!visitorId) return
-
-  const clientIP = await getClientIP()
+  const client = await getClientIP()
+  const clientIP = client.ip_address
+  const clientCountry = client.country
   sendEvent({
     event_type: 'scroll',
     scroll_depth: scrollDepth,
@@ -146,6 +163,8 @@ async function trackScroll(scrollDepth) {
     visitor_id: visitorId,
     session_id: sessionId,
     ip_address: clientIP,
+    country: clientCountry,
+    referrer: document.referrer || null,
     user_agent: navigator.userAgent,
   })
 }
@@ -187,7 +206,9 @@ export async function trackButtonClick(buttonName) {
   if (!visitorId || !buttonName) return
 
   const { browser, os } = getBrowserInfo()
-  const clientIP = await getClientIP()
+  const client = await getClientIP()
+  const clientIP = client.ip_address
+  const clientCountry = client.country
 
   sendEvent({
     event_type: 'click',
@@ -196,6 +217,8 @@ export async function trackButtonClick(buttonName) {
     visitor_id: visitorId,
     session_id: sessionId,
     ip_address: clientIP,
+    country: clientCountry,
+    referrer: document.referrer || null,
     device_type: getDeviceType(),
     browser,
     os,
@@ -212,7 +235,9 @@ export async function trackDownloadClick(platform) {
   if (!visitorId) return
 
   const { browser, os } = getBrowserInfo()
-  const clientIP = await getClientIP()
+  const client = await getClientIP()
+  const clientIP = client.ip_address
+  const clientCountry = client.country
 
   sendEvent({
     event_type: 'click',
@@ -221,6 +246,7 @@ export async function trackDownloadClick(platform) {
     visitor_id: visitorId,
     session_id: sessionId,
     ip_address: clientIP,
+    country: clientCountry,
     device_type: getDeviceType(),
     browser,
     os,
@@ -254,7 +280,9 @@ async function sendDownload(platform, clientIP, browser, os) {
 export async function trackInstallerDownload(platform) {
   if (!visitorId) return
 
-  const clientIP = await getClientIP()
+  const client = await getClientIP()
+  const clientIP = client.ip_address
+  const clientCountry = client.country
   try {
     await fetch(`${TRACKING_CONFIG.API_BASE}/analytics/track-installer-download`, {
       method: 'POST',
@@ -264,6 +292,7 @@ export async function trackInstallerDownload(platform) {
         visitor_id: visitorId,
         session_id: sessionId,
         ip_address: clientIP,
+        country: clientCountry,
         user_agent: navigator.userAgent,
         device_type: getDeviceType(),
         browser: getBrowserInfo().browser,
@@ -333,8 +362,9 @@ export async function trackQuery(queryLength, responseTime, success) {
 
 export async function trackError(errorType, errorMessage, errorStack, page) {
   if (!visitorId) return
-
-  const clientIP = await getClientIP()
+  const client = await getClientIP()
+  const clientIP = client.ip_address
+  const clientCountry = client.country
   try {
     await fetch(`${TRACKING_CONFIG.API_BASE}/analytics/track-error`, {
       method: 'POST',
@@ -347,6 +377,7 @@ export async function trackError(errorType, errorMessage, errorStack, page) {
         error_stack: errorStack,
         page: page || window.location.pathname,
         ip_address: clientIP,
+        country: clientCountry,
         user_agent: navigator.userAgent,
       }),
     })
