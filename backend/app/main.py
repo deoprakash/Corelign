@@ -33,7 +33,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174")
+cors_origins = os.getenv(
+    "CORS_ORIGINS",
+    "https://corelign-k4hs.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174",
+)
 allowed_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
 cors_origin_regex = os.getenv(
     "CORS_ORIGIN_REGEX",
