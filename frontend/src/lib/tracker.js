@@ -15,6 +15,10 @@ let maxScrollDepth = 0
 let lastTrackedPath = null
 let initialized = false
 
+// Cache and in-flight promise to ensure we only resolve client IP once
+let _cachedClientIP = null
+let _clientIPPromise = null
+
 const DOWNLOAD_BUTTONS = {
   'download-windows': 'windows',
   download_windows: 'windows',
@@ -62,29 +66,41 @@ function getScreenSize() {
 }
 
 async function getClientIP() {
-  // Try a client-side geo-IP lookup first (returns public IP and country).
-  try {
-    const resp = await fetch('https://ipapi.co/json/')
-    if (resp.ok) {
-      const d = await resp.json()
-      return { ip_address: d.ip || '0.0.0.0', country: d.country_name || d.country || null }
-    }
-  } catch (err) {
-    if (TRACKING_CONFIG.DEBUG) console.warn('ipapi lookup failed, falling back to server:', err)
-  }
+  if (_cachedClientIP) return _cachedClientIP
+  if (_clientIPPromise) return _clientIPPromise
 
-  // Fallback: ask local backend for client IP (may be 127.0.0.1 in local dev)
-  try {
-    const response = await fetch(`${TRACKING_CONFIG.API_BASE}/analytics/get-client-ip`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    })
-    const data = await response.json()
-    return { ip_address: data.ip_address || '0.0.0.0', country: null }
-  } catch (error) {
-    if (TRACKING_CONFIG.DEBUG) console.warn('Could not get client IP:', error)
-    return { ip_address: '0.0.0.0', country: null }
-  }
+  _clientIPPromise = (async () => {
+    // Try a client-side geo-IP lookup first (returns public IP and country).
+    try {
+      const resp = await fetch('https://ipapi.co/json/')
+      if (resp.ok) {
+        const d = await resp.json()
+        _cachedClientIP = { ip_address: d.ip || '0.0.0.0', country: d.country_name || d.country || null }
+        return _cachedClientIP
+      }
+    } catch (err) {
+      if (TRACKING_CONFIG.DEBUG) console.warn('ipapi lookup failed, falling back to server:', err)
+    }
+
+    // Fallback: ask local backend for client IP (may be 127.0.0.1 in local dev)
+    try {
+      const response = await fetch(`${TRACKING_CONFIG.API_BASE}/analytics/get-client-ip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await response.json()
+      _cachedClientIP = { ip_address: data.ip_address || '0.0.0.0', country: null }
+      return _cachedClientIP
+    } catch (error) {
+      if (TRACKING_CONFIG.DEBUG) console.warn('Could not get client IP:', error)
+      _cachedClientIP = { ip_address: '0.0.0.0', country: null }
+      return _cachedClientIP
+    } finally {
+      _clientIPPromise = null
+    }
+  })()
+
+  return _clientIPPromise
 }
 
 export async function initTracking() {

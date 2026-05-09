@@ -14,6 +14,10 @@ let visitorId = null
 let sessionId = null
 let maxScrollDepth = 0
 
+// Cache and in-flight promise so we only ask the server for IP once
+let _cachedClientIP = null
+let _clientIPPromise = null
+
 // ========== INITIALIZATION ==========
 
 function generateUUID() {
@@ -54,14 +58,25 @@ function getScreenSize() {
 }
 
 async function getClientIP() {
-  try {
-    const response = await fetch(`${ANALYTICS_CONFIG.API_BASE}/analytics/get-client-ip`)
-    const data = await response.json()
-    return data.ip_address
-  } catch (error) {
-    if (ANALYTICS_CONFIG.DEBUG) console.warn('Could not get client IP:', error)
-    return '0.0.0.0'
-  }
+  if (_cachedClientIP) return _cachedClientIP
+  if (_clientIPPromise) return _clientIPPromise
+
+  _clientIPPromise = (async () => {
+    try {
+      const response = await fetch(`${ANALYTICS_CONFIG.API_BASE}/analytics/get-client-ip`)
+      const data = await response.json()
+      _cachedClientIP = data.ip_address || '0.0.0.0'
+      return _cachedClientIP
+    } catch (error) {
+      if (ANALYTICS_CONFIG.DEBUG) console.warn('Could not get client IP:', error)
+      _cachedClientIP = '0.0.0.0'
+      return _cachedClientIP
+    } finally {
+      _clientIPPromise = null
+    }
+  })()
+
+  return _clientIPPromise
 }
 
 export async function initTracking() {

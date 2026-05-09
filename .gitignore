@@ -90,3 +90,9 @@ backend/.pytest_cache/
 # Local environment overrides
 .env.local
 .env.*.local
+
+# Ignore various env files and examples (don't commit secrets)
+.env.example
+.env.production
+*.env
+*.env.*
