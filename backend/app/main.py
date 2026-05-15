@@ -1,7 +1,15 @@
-__import__("pysqlite3")
 import sys
 
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+# Prefer pysqlite3 if available (packaging on some hosts). Fall back to
+# the stdlib `sqlite3` when it's not installed to avoid crashing startup.
+try:
+    import pysqlite3  # type: ignore
+    # Replace the stdlib sqlite3 module with pysqlite3 implementation
+    # so downstream code can import `sqlite3` as usual.
+    sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+except Exception:
+    # pysqlite3 not available — continue using stdlib sqlite3
+    pass
 
 import asyncio
 import os
