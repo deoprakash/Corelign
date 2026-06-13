@@ -1,11 +1,10 @@
-import base64
 import os
+import smtplib
 from email.message import EmailMessage
+from email.utils import formataddr
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
 
 from app.models.schemas import DemoRequest, DemoRequestResponse
 
@@ -13,10 +12,23 @@ router = APIRouter()
 
 
 def _get_sender_email() -> str:
-    sender = os.getenv('GMAIL_SENDER_EMAIL')
+    sender = os.getenv('SMTP_SENDER_EMAIL') or os.getenv('GMAIL_SENDER_EMAIL')
     if not sender:
-        raise ValueError('GMAIL_SENDER_EMAIL must be configured.')
+        raise ValueError('SMTP_SENDER_EMAIL must be configured.')
     return sender
+
+
+def _get_smtp_settings() -> tuple[str, int, str, str, bool]:
+    host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+    port = int(os.getenv('SMTP_PORT', '587'))
+    username = os.getenv('SMTP_USERNAME')
+    password = os.getenv('SMTP_PASSWORD')
+    use_ssl = os.getenv('SMTP_USE_SSL', '').lower() in {'1', 'true', 'yes'}
+
+    if not username or not password:
+        raise ValueError('SMTP_USERNAME and SMTP_PASSWORD must be configured.')
+
+    return host, port, username, password, use_ssl
 
 
 def _build_owner_notification_email(payload: DemoRequest, sender: str) -> EmailMessage:
@@ -24,7 +36,7 @@ def _build_owner_notification_email(payload: DemoRequest, sender: str) -> EmailM
 
     msg = EmailMessage()
     msg['Subject'] = f"Corelign Demo Request: {payload.name}"
-    msg['From'] = sender
+    msg['From'] = formataddr(("Corelign Team", sender))
     msg['To'] = recipient
     msg['Reply-To'] = payload.email
 
@@ -63,31 +75,21 @@ def _build_user_confirmation_email(payload: DemoRequest, sender: str) -> EmailMe
     return msg
 
 
-def _gmail_service():
-    client_id = os.getenv('GOOGLE_CLIENT_ID')
-    client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
-    refresh_token = os.getenv('GOOGLE_REFRESH_TOKEN')
+def _send_smtp_messages(messages: list[EmailMessage]) -> None:
+    host, port, username, password, use_ssl = _get_smtp_settings()
 
-    if not client_id or not client_secret or not refresh_token:
-        raise ValueError('GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN must be configured.')
+    if use_ssl:
+        with smtplib.SMTP_SSL(host, port) as server:
+            server.login(username, password)
+            for msg in messages:
+                server.send_message(msg)
+        return
 
-    creds = Credentials(
-        token=None,
-        refresh_token=refresh_token,
-        token_uri='https://oauth2.googleapis.com/token',
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=['https://www.googleapis.com/auth/gmail.send'],
-    )
-
-    return build('gmail', 'v1', credentials=creds, cache_discovery=False)
-
-
-def _send_gmail_api_messages(messages: list[EmailMessage]) -> None:
-    service = _gmail_service()
-    for msg in messages:
-        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
-        service.users().messages().send(userId='me', body={'raw': raw}).execute()
+    with smtplib.SMTP(host, port) as server:
+        server.starttls()
+        server.login(username, password)
+        for msg in messages:
+            server.send_message(msg)
 
 
 @router.post('/demo-request', response_model=DemoRequestResponse)
@@ -102,7 +104,7 @@ async def send_demo_request(payload: DemoRequest):
         sender = _get_sender_email()
         owner_notification = _build_owner_notification_email(payload, sender)
         user_confirmation = _build_user_confirmation_email(payload, sender)
-        await run_in_threadpool(_send_gmail_api_messages, [owner_notification, user_confirmation])
+        await run_in_threadpool(_send_smtp_messages, [owner_notification, user_confirmation])
     except ValueError as cfg_error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

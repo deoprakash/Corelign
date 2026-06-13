@@ -49,19 +49,20 @@ The backend is ready for Railway deployment using Docker.
 - `DATA_DIR` (recommended): Persistent data path. Use `/data` with Railway Volume.
 - `DATA_RESET_DAYS` (optional): Reset interval in days. Default is `3`.
 - `DATA_RESET_CHECK_INTERVAL_HOURS` (optional): How often the app checks the reset timer. Default is `24`.
-- `GOOGLE_CLIENT_ID` (required for demo email): Google OAuth client ID.
-- `GOOGLE_CLIENT_SECRET` (required for demo email): Google OAuth client secret.
-- `GOOGLE_REFRESH_TOKEN` (required for demo email): OAuth refresh token with Gmail send scope.
-- `GMAIL_SENDER_EMAIL` (required for demo email): Gmail address that sends demo emails.
+- `SMTP_HOST` (optional for demo email): SMTP server hostname. Default is `smtp.gmail.com`.
+- `SMTP_PORT` (optional for demo email): SMTP server port. Default is `587`.
+- `SMTP_USERNAME` (required for demo email): SMTP login username, usually the sender email.
+- `SMTP_PASSWORD` (required for demo email): SMTP login password or app password.
+- `SMTP_SENDER_EMAIL` (required for demo email): Address shown in the `From` header.
+- `SMTP_USE_SSL` (optional for demo email): Set to `true` for implicit SSL on port 465.
 - `DEMO_RECEIVER_EMAIL` (required for demo email): Inbox where demo requests are delivered.
 
-### Gmail API setup for demo requests
-1. Create a Google Cloud project and enable the Gmail API.
-2. Configure OAuth consent screen and create OAuth client credentials.
-3. Obtain a refresh token with scope `https://www.googleapis.com/auth/gmail.send`.
-4. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REFRESH_TOKEN` in Railway.
-5. Set `GMAIL_SENDER_EMAIL` to the Gmail address authorized by OAuth.
-6. Set `DEMO_RECEIVER_EMAIL=deoprakash364@gmail.com`.
+### SMTP setup for demo requests
+1. Enable 2-step verification on the sender mailbox (required for Gmail app passwords).
+2. Create an app password for the sender account.
+3. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `SMTP_SENDER_EMAIL` in Railway.
+4. Set `DEMO_RECEIVER_EMAIL=deoprakash364@gmail.com`.
+5. For Gmail on port 465, set `SMTP_USE_SSL=true` and `SMTP_PORT=465`.
 
 ### Railway setup
 1. Create a new Railway service from the `backend` directory.
