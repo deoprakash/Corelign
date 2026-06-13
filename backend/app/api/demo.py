@@ -56,7 +56,7 @@ def _build_owner_notification_email(payload: DemoRequest, sender: str) -> EmailM
 def _build_user_confirmation_email(payload: DemoRequest, sender: str) -> EmailMessage:
     msg = EmailMessage()
     msg['Subject'] = 'Corelign Demo Request Received'
-    msg['From'] = sender
+    msg['From'] = formataddr(("Corelign Team", sender))
     msg['To'] = payload.email
 
     body = (
