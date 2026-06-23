@@ -10,6 +10,7 @@ import Download from './pages/Download'
 import Footer from './components/Footer'
 import { NotificationProvider } from './context/NotificationContext'
 import ToastContainer from './components/ToastContainer'
+import FeedbackPopup from './components/FeedbackPopup'
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
             <span className="hidden sm:inline">Contact Us</span>
           </Link>
 
+          <FeedbackPopup />
           <ToastContainer />
         </div>
       </BrowserRouter>

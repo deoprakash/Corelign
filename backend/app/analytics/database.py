@@ -981,6 +981,20 @@ class AnalyticsDB:
             "error_count_today": self.get_error_analytics(days=1)["total_errors"],
             "workspace_analytics": self.get_workspace_analytics(days=days)
         }
+    
+    def save_feedback(
+            self, visitor_id,
+            source, feedback, rating, email
+    ):
+        
+        return self.db.feedback.insert_one({
+            "visitor_id": visitor_id,
+            "source": source,
+            "feedback": feedback,
+            "rating": rating,
+            "email": email,
+            "submitted_at": datetime.now()
+        })
 
 
 # Initialize global instance

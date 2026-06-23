@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, HTTPException, Header
 from app.analytics.schemas import (
     EventTrackingRequest, DownloadTrackingRequest, FileUploadTrackingRequest,
     QueryTrackingRequest, ErrorTrackingRequest, BlockAddressRequest,
-    UnblockAddressRequest
+    UnblockAddressRequest, FeedbackRequest
 )
 from app.analytics.database import analytics_db
 import os
@@ -360,3 +360,16 @@ async def get_blocked_ips(x_admin_password: str = Header(None)):
 async def health_check():
     """Public health endpoint to check service and DB connectivity"""
     return {"status": "ok", "db_connected": analytics_db._db_available()}
+
+@router.post("/feedback")
+async def submit_feedback(request: FeedbackRequest):
+
+    analytics_db.save_feedback(
+        visitor_id=request.visitor_id,
+        source=request.source,
+        feedback=request.feedback,
+        rating=request.rating,
+        email=request.email        
+    )
+
+    return {"status": "success"}

@@ -197,3 +197,11 @@ class BlockedAddressResponse(BaseModel):
     mac_address: Optional[str] = None
     reason: Optional[str] = None
     blocked_at: datetime
+
+# ========== FEEDBACK RESPONSE SCHEMAS ==========
+class FeedbackRequest(BaseModel):
+    visitor_id: str
+    source: str | None = None
+    feedback: str
+    rating: int
+    email: str | None = None
