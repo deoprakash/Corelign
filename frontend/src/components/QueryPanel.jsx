@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import useApiBase from '../hooks/useApiBase'
 import { useNotification } from '../context/NotificationContext'
+import { AppContext } from '../context/AppContext'
+import { useContext } from 'react'
 import { postJson } from '../lib/api'
+import { useNavigate } from "react-router-dom";
 
 const STORAGE_KEY = 'chat_history_v1'
-const QUERY_LIMIT_KEY = 'query_limit_count_v1'
-const MAX_QUERY_LIMIT = 10
+const GUEST_QUERY_LIMIT_KEY = 'guest_query_limit_count_v1'
+const GUEST_MAX_QUERY_LIMIT = 5
 
 function makeId() {
   return `${Date.now()}-${Math.floor(Math.random() * 10000)}`
@@ -13,6 +16,7 @@ function makeId() {
 
 export default function QueryPanel() {
   const apiBase = useApiBase()
+  const { currentUser } = useContext(AppContext)
   const [inputText, setInputText] = useState('')
   const [messages, setMessages] = useState([])
   const [status, setStatus] = useState('idle')
@@ -20,23 +24,33 @@ export default function QueryPanel() {
   const [showRestrictionPopup, setShowRestrictionPopup] = useState(false)
   const listRef = useRef(null)
   const { push } = useNotification()
+  const navigate = useNavigate();
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) setMessages(JSON.parse(raw))
 
-      const queryCountRaw = localStorage.getItem(QUERY_LIMIT_KEY)
-      if (queryCountRaw) {
-        const parsed = Number(queryCountRaw)
-        if (!Number.isNaN(parsed) && parsed >= 0) {
-          setQueryCount(parsed)
+      if (!currentUser) {
+        const queryCountRaw = localStorage.getItem(GUEST_QUERY_LIMIT_KEY)
+        if (queryCountRaw) {
+          const parsed = Number(queryCountRaw)
+          if (!Number.isNaN(parsed) && parsed >= 0) {
+            setQueryCount(parsed)
+          }
         }
       }
     } catch (e) {
       console.warn('Failed to load chat history', e)
     }
-  }, [])
+  }, [currentUser])
+
+  useEffect(() => {
+    if (currentUser) {
+      setQueryCount(0)
+      setShowRestrictionPopup(false)
+    }
+  }, [currentUser])
 
   useEffect(() => {
     try {
@@ -53,11 +67,17 @@ export default function QueryPanel() {
     const text = inputText.trim()
     if (!text) return
 
-    if (queryCount >= MAX_QUERY_LIMIT) {
-      setShowRestrictionPopup(true)
-      push({ type: 'warn', title: 'Query limit reached', message: 'You can ask up to 10 queries only.' })
-      return
-    }
+      if (!currentUser && queryCount >= GUEST_MAX_QUERY_LIMIT) {
+        push({
+          type: "info",
+          title: "Login required",
+          message:
+            "You have reached the free query limit. Please login to continue.",
+        });
+
+        navigate("/login");
+        return;
+      }
 
     const userMsg = { id: makeId(), role: 'user', text, createdAt: Date.now() }
     setMessages((m) => [...m, userMsg])
@@ -80,8 +100,10 @@ export default function QueryPanel() {
       setMessages((m) => [...m, assistantMsg])
 
       const nextCount = queryCount + 1
-      setQueryCount(nextCount)
-      localStorage.setItem(QUERY_LIMIT_KEY, String(nextCount))
+      if (!currentUser) {
+        setQueryCount(nextCount)
+        localStorage.setItem(GUEST_QUERY_LIMIT_KEY, String(nextCount))
+      }
 
       if (!data.answer || data.answer === '') {
         push({ type: 'warn', title: 'No answer', message: 'No answer returned for this query.' })
@@ -123,7 +145,9 @@ export default function QueryPanel() {
         <div>
           <h2 className="font-display text-2xl font-semibold text-slate-900 lg:text-[2rem]">Conversation</h2>
           <p className="mt-1 text-sm text-slate-600">Persistent chat with retrieved chunks and history.</p>
-          <p className="mt-2 text-xs font-medium text-slate-500">Queries used: {queryCount}/{MAX_QUERY_LIMIT}</p>
+          {!currentUser ? (
+            <p className="mt-2 text-xs font-medium text-slate-500">Guest queries used: {queryCount}/{GUEST_MAX_QUERY_LIMIT}</p>
+          ) : null}
         </div>
         <div>
           <button className="btn-ghost" onClick={clearHistory} data-analytics="query-clear-history">Clear</button>
@@ -170,22 +194,22 @@ export default function QueryPanel() {
       </div>
 
       <form className="mt-4 border-t border-white/50 pt-4" onSubmit={handleSend}>
-        <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ask a question about your uploaded documents..." className="min-h-[80px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none focus:border-teal-500 disabled:cursor-not-allowed disabled:opacity-60" disabled={queryCount >= MAX_QUERY_LIMIT} />
+        <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Ask a question about your uploaded documents..." className="min-h-[80px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 outline-none focus:border-teal-500 disabled:cursor-not-allowed disabled:opacity-60" />
         <div className="mt-3 flex items-center gap-3">
-          <button className="btn-primary" type="submit" disabled={status === 'loading' || queryCount >= MAX_QUERY_LIMIT} data-analytics="query-send">{status === 'loading' ? 'Thinking...' : 'Send'}</button>
-          <button className="btn-ghost" type="button" onClick={() => setInputText('')} disabled={queryCount >= MAX_QUERY_LIMIT} data-analytics="query-clear-input">Clear input</button>
+          <button className="btn-primary" type="submit" disabled={status === 'loading'} data-analytics="query-send">{status === 'loading' ? 'Thinking...' : 'Send'}</button>
+          <button className="btn-ghost" type="button" onClick={() => setInputText('')} data-analytics="query-clear-input">Clear input</button>
         </div>
       </form>
 
       {showRestrictionPopup ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
           <div className="glass w-full max-w-md rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-slate-900">Query limit reached</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Limit over</h3>
             <p className="mt-2 text-sm text-slate-700">
-              You have reached the maximum limit of {MAX_QUERY_LIMIT} queries. Please contact support to continue.
+              limit over. please login in
             </p>
             <div className="mt-5 flex justify-end">
-              <button className="btn-primary" onClick={() => setShowRestrictionPopup(false)} data-analytics="query-limit-popup-close">
+              <button className="btn-primary" type="button" onClick={() => setShowRestrictionPopup(false)} data-analytics="query-limit-popup-close">
                 Got it
               </button>
             </div>

@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import upload, query, demo, analytics
+from app.api import upload, query, demo, analytics, auth
 from app.utils.storage_reset import ensure_storage_reset, storage_reset_loop
 
 
@@ -69,6 +69,7 @@ app.include_router(upload.router, prefix="/upload", tags=["Upload"])
 app.include_router(query.router, tags=["Query"])
 app.include_router(demo.router, tags=["Demo"])
 app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
 @app.get("/")
 def health_check():
