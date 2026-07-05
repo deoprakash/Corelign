@@ -13,3 +13,4 @@ pdfplumber
 pymongo
 motor
 pysqlite3-binary
+pydantic[email]
