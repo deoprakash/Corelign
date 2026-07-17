@@ -14,6 +14,8 @@ import ToastContainer from './components/ToastContainer'
 import FeedbackPopup from './components/FeedbackPopup'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 
 function App() {
 
@@ -35,6 +37,8 @@ function App() {
                 <Route path="/download" element={<Download />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route
                   path="/about-us"
                   element={<Navigate to="/about" replace />}

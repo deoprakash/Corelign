@@ -25,17 +25,17 @@ export default function Footer() {
           </p>
 
           <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
-            <a href="#" className="hover:text-slate-700">
+            <Link to="/contact" className="hover:text-slate-700">
               Contact
-            </a>
+            </Link>
             <span>·</span>
-            <a href="#" className="hover:text-slate-700">
+            <Link to="/privacy-policy" className="hover:text-slate-700">
               Privacy
-            </a>
+            </Link>
             <span>·</span>
-            <a href="#" className="hover:text-slate-700">
+            <Link to="/terms-of-service" className="hover:text-slate-700">
               Terms
-            </a>
+            </Link>
           </div>
         </div>
 

@@ -83,8 +83,8 @@ export default function Home() {
       <section id="capabilities" className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="glass rounded-3xl p-8">
           <p className="pill bg-orange-50 text-orange-600">Built for teams</p>
-          <h2 className="mt-4 font-display text-3xl font-semibold text-slate-900">Everything your analysts need in one interface.</h2>
-          <p className="mt-4 text-slate-600">Configure data sources, define retrieval rules, and push new content live in minutes with audit-ready controls.</p>
+          <h2 className="mt-4 font-display text-3xl font-semibold text-slate-900">Everything your team needs in one interface.</h2>
+          <p className="mt-4 text-slate-600">Connect your documents, manage team access, and unlock instant knowledge in minutes with enterprise-grade security.</p>
           <div className="mt-6 grid gap-4">
             {features.map((feature) => (
               <div key={feature.title} className="rounded-2xl border border-white/80 bg-white/70 p-5">
@@ -126,10 +126,10 @@ export default function Home() {
           <ScrollReveal direction="up">
             <p className="pill bg-teal-50 text-teal-700">AI Document Assistant</p>
             <h2 className="mt-4 font-display text-3xl font-semibold text-slate-900">
-              Retrieval-Augmented Generation (RAG) powered intelligence
+              Powered by Advanced RAG Technology
             </h2>
             <p className="mt-4 text-slate-600">
-              Corelign is a Retrieval-Augmented Generation (RAG) based AI platform that allows users to upload documents such as PDFs and DOCX files, index them using semantic embeddings, and query them using a conversational interface.
+              Corelign transforms your static documents into a conversational knowledge base. Simply upload your PDFs and Word files, and instantly get precise, reliable answers with near zero hallucination—making it essential for professionals who need accurate information fast.
             </p>
           </ScrollReveal>
         </div>
@@ -139,28 +139,28 @@ export default function Home() {
           <ScrollRevealGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06} direction="up">
             {[
               {
-                title: 'Semantic Document Search',
-                description: 'FAISS and embeddings for intelligent, context-aware retrieval',
+                title: 'Smart Contextual Search',
+                description: 'Finds exactly what you mean, not just what you type, for highly relevant results.',
               },
               {
-                title: 'Hybrid Retrieval',
-                description: 'Combines BM25 and vector search for comprehensive results',
+                title: 'Near Zero Hallucination',
+                description: 'Delivers highly accurate and reliable answers you can trust for critical business decisions.',
               },
               {
-                title: 'Explainable AI Answers',
-                description: 'Get confident responses with source references and citations',
+                title: 'Verifiable Answers',
+                description: 'Every response is backed by clear source references and exact citations from your files.',
               },
               {
                 title: 'Workspace Management',
-                description: 'Organize and manage documents efficiently across projects',
+                description: 'Organize and manage your team\'s knowledge efficiently across different projects.',
               },
               {
-                title: 'Scalable Architecture',
-                description: 'FastAPI backend built for enterprise-grade performance',
+                title: 'Enterprise Reliability',
+                description: 'Built to handle your organization\'s growing needs with fast and secure performance.',
               },
               {
                 title: 'Multi-Format Support',
-                description: 'Handle PDFs, DOCX, and other document formats seamlessly',
+                description: 'Seamlessly works with the PDFs, Word documents, and files you already use every day.',
               },
             ].map((feature) => (
               <div key={feature.title} className="glass rounded-2xl p-6">

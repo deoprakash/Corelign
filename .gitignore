@@ -96,3 +96,7 @@ backend/.pytest_cache/
 .env.production
 *.env
 *.env.*
+
+.env.dev.local  
+docker-compose.yml
+

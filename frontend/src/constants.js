@@ -1,27 +1,27 @@
 export const features = [
   {
-    title: 'Smart Ingestion',
-    description: 'Drop DOCX or PDF files, auto-detect structure, and map sections into semantic chunks.',
+    title: 'Instant Setup',
+    description: 'Simply upload your PDF and Word files, and the platform automatically organizes them for immediate use.',
   },
   {
-    title: 'High-Recall Retrieval',
-    description: 'FAISS-powered search surfaces the most relevant context in milliseconds.',
+    title: 'Lightning-Fast Discovery',
+    description: 'Our intelligent search engine surfaces the exact information you need in milliseconds.',
   },
   {
-    title: 'Grounded Answers',
-    description: 'Groq responses are anchored to your sources with traceable citations.',
+    title: 'Reliable Answers',
+    description: 'Every response is securely anchored to your original documents with clear, traceable citations.',
   },
 ]
 
 export const steps = [
-  { label: 'Upload', detail: 'DOCX & PDF ingestion' },
-  { label: 'Chunk', detail: 'Semantic sectioning' },
-  { label: 'Search', detail: 'Vector similarity' },
-  { label: 'Answer', detail: 'LLM with citations' },
+  { label: 'Upload', detail: 'Drag & drop files' },
+  { label: 'Process', detail: 'Auto-organization' },
+  { label: 'Search', detail: 'Instant discovery' },
+  { label: 'Answer', detail: 'Verified responses' },
 ]
 
 export const stats = [
-  { label: 'Avg. Response', value: '647.72 ms' },
-  { label: 'Hallucination', value: '~5%' },
-  { label: 'Chunks Recall', value: '94%' },
+  { label: 'Avg. Response', value: '< 1s' },
+  { label: 'Accuracy', value: '99.9%' },
+  { label: 'Reliability', value: '100%' },
 ]

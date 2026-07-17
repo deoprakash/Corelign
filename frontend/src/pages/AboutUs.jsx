@@ -178,20 +178,16 @@ export default function AboutUs() {
               </div>
               <p className="mt-3 text-sm text-slate-600 text-justify">
                 AI Engineer with hands-on experience in designing and deploying
-                real-world Artificial Intelligence solutions across Generative
-                AI, Large Language Models (LLMs), Retrieval-Augmented Generation
-                (RAG), deep learning, and intelligent automation. Skilled in
-                building scalable AI systems, including conversational
-                assistants, multimodal applications, workflow automation
-                platforms, and edge-deployed machine learning models. <br /> <br /> My work
-                spans diverse domains such as healthcare, industrial defect
-                detection, customer support automation, and enterprise AI
-                solutions. I have experience developing end-to-end AI products,
-                from data processing and model training to cloud deployment and
-                production integration. Passionate about research-driven
-                innovation, I focus on bridging the gap between cutting-edge AI
-                advancements and practical business applications, creating
-                intelligent systems that deliver measurable real-world impact.
+                real-world Artificial Intelligence solutions that solve complex
+                business challenges. Skilled in building intelligent, scalable 
+                systems—including advanced conversational assistants and RAG-powered
+                enterprise platforms—that turn data into actionable insights.
+                <br /> <br /> My work spans diverse domains such as healthcare, industrial
+                operations, and customer support automation. I have experience 
+                developing end-to-end AI products that deliver measurable real-world 
+                impact. Passionate about innovation, I focus on bridging the gap 
+                between cutting-edge AI and practical business applications to 
+                help organizations work smarter.
               </p>
             </div>
 
@@ -252,17 +248,16 @@ export default function AboutUs() {
                 </a>
               </div>
               <p className="mt-3 text-sm text-slate-600 text-justify">
-                I am a final-year Computer Science Engineering student
-                specializing in Artificial Intelligence, with hands-on
-                experience in building real-world AI systems. My work spans deep
-                learning, LLM applications, and multimodal AI, including
-                projects in healthcare, industrial defect detection, and
-                intelligent automation. Currently working as an AI Engineer, I
-                focus on developing scalable solutions such as RAG pipelines,
-                LLM-driven assistants, and edge-deployed models. I am deeply
-                interested in research-driven innovation, aiming to build
-                impactful systems that bridge the gap between AI theory and
-                practical deployment.
+                I am a Computer Science Engineering student specializing in 
+                Artificial Intelligence, with hands-on experience in building 
+                real-world AI systems. My work focuses on creating smart 
+                applications that solve everyday challenges, including projects 
+                in healthcare, industrial operations, and intelligent automation. 
+                Currently working as an AI Engineer, I specialize in developing 
+                scalable business solutions such as RAG-powered platforms and 
+                intelligent enterprise assistants. I am deeply interested in 
+                innovation, aiming to build impactful systems that bridge the gap 
+                between powerful AI technology and practical, seamless user experiences.
               </p>
             </div>
           </ScrollRevealGroup>
