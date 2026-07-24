@@ -110,7 +110,7 @@ export default function Footer() {
             </p>
             <div className="mt-4 flex justify-center gap-3 text-slate-500">
               <a
-                href="https://www.linkedin.com/in/deo-prakash-152265225"
+                href="https://www.linkedin.com/in/deo-prakash"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Deo LinkedIn"

@@ -130,7 +130,7 @@ export default function AboutUs() {
               </p>
               <div className="mt-2 flex items-center gap-3 text-slate-600">
                 <a
-                  href="https://www.linkedin.com/in/deo-prakash-152265225"
+                  href="https://www.linkedin.com/in/deo-prakash"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Deo LinkedIn"
